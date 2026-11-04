@@ -1155,11 +1155,6 @@ function createPresetCard(preset) {
     safetyContent.appendChild(neckText);
   }
 
-  const note = document.createElement("p");
-  note.textContent =
-    "Educational reference only. Listed device temperature ranges are not confirmed skin-contact limits; this webpage does not control the prototype.";
-  safetyContent.appendChild(note);
-
   safety.append(safetyHeading, safetyContent);
   card.appendChild(safety);
   return card;
