@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FahrenCool | Interactive Therapy Clinic</title>
+
+<style>
+:root {
+  --teal: #009b91;
+  --teal-dark: #007a73;
+  --orange: #f27d32;
+  --ink: #173740;
+  --muted: #637e86;
+  --glass: rgba(252, 255, 255, .83);
+  --border: rgba(255, 255, 255, .78);
+  --panel-shadow: 0 12px 38px rgba(20, 59, 67, .13), 0 2px 8px rgba(20, 59, 67, .04);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
+.clinic-stage { position: fixed; inset: 0; overflow: hidden; background: #dfeae8; }
+#viewer { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#viewer.dragging { cursor: grabbing; }
+#viewer canvas { display: block; width: 100%; height: 100%; }
+
+/* Loading screen */
+#loading {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 48% 42%, #fcfffe, #e9f5f2 52%, #d7e9e5);
+  color: #53797b;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity .55s ease, visibility .55s ease;
+}
+
+#loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#loading.failed .fc-loader-message { color: #a54b38; }
+
+.fc-loader {
+  width: min(680px, 96vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fcAppear .6s ease both;
+}
+
+.fc-pad {
+  width: 100%;
+  max-width: 650px;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 14px 22px rgba(32, 100, 94, .13));
+  animation: fcFloat 3.4s ease-in-out infinite;
+}
+
+/* Water circulation stays inside the pad */
+.fc-pad-tube,
+.fc-tube-water,
+.fc-pad-water,
+.fc-water-shimmer {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fc-pad-tube {
+  stroke: #9fcac6;
+  stroke-width: 15;
+}
+
+.fc-tube-water {
+  stroke: #bdf2ed;
+  stroke-width: 10;
+}
+
+.fc-pad-water {
+  stroke: #08b7ad;
+  stroke-width: 5;
+  stroke-dasharray: 13 14;
+}
+
+.fc-water-shimmer {
+  stroke: rgba(255, 255, 255, .8);
+  stroke-width: 2;
+  stroke-dasharray: 3 24;
+}
+
+.fc-loader-brand {
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  margin-top: -15px;
+}
+
+.brand-fahren { color: var(--orange); }
+.brand-cool { color: var(--teal); }
+
+.fc-loader-message {
+  margin: 12px 0 0;
+  color: #5f7e80;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.fc-loading-dots {
+  display: flex;
+  gap: 9px;
+  margin-top: 17px;
+}
+
+.fc-loading-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: fcDot 1.2s ease-in-out infinite;
+}
+
+.fc-loading-dots span:nth-child(2) { background: var(--orange); animation-delay: .2s; }
+.fc-loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+@media (max-width: 767px) {
+  .fc-loader {
+    width: min(440px, 98vw);
+  }
+
+  .fc-pad {
+    max-width: 430px;
+  }
+
+  .fc-loader-brand {
+    font-size: 34px;
+  }
+
+  .fc-loader-message {
+    font-size: 13px;
+  }
+}
+
+@keyframes fcFloat {
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes fcDot {
+  0%, 80%, 100% { opacity: .3; transform: scale(.75); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes fcAppear {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Main interface */
+.ui-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.ui-layer > * { pointer-events: auto; }
+
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  box-shadow: var(--panel-shadow);
+}
+
+/* Header */
+.site-header {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  right: 24px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 20px;
+  min-height: 68px;
+  background: rgba(255, 255, 255, .88);
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 17px;
+  box-shadow: 0 8px 30px rgba(20, 59, 67, .10);
+}
+
+.brand {
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -.9px;
+  line-height: 1.1;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.header-caption {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: #79949a;
+  text-transform: uppercase;
+}
+
+.menu-toggle {
+  display: none;
+  border: 1px solid #cce4e1;
+  background: #eef7f5;
+  color: var(--teal-dark);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+/* Left body parts panel */
+.body-panel {
+  position: absolute;
+  z-index: 7;
+  top: 110px;
+  left: 24px;
+  bottom: 24px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.body-panel-header {
+  padding: 21px 18px 16px;
+  border-bottom: 1px solid #e0ebec;
+  flex-shrink: 0;
+}
+
+.body-panel-header h2 { margin: 0 0 9px; font-size: 17px; font-weight: 800; }
+.body-panel-header p { font-size: 13px; line-height: 1.6; margin: 0; color: var(--muted); }
+
+.body-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 15px 13px;
+  scrollbar-width: thin;
+  scrollbar-color: #a6cfca transparent;
+}
+
+.part {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  margin-bottom: 9px;
+  border: 1px solid #c9e2e2;
+  border-radius: 11px;
+  background: rgba(248, 252, 252, .8);
+  color: #21454c;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+
+.part:hover {
+  background: #ddf9f4;
+  border-color: #92d9d0;
+  transform: translateX(3px);
+}
+
+.part.active {
+  background: #adf0e5;
+  border-color: #0da79c;
+  color: #006c66;
+  font-weight: 800;
+  box-shadow: inset 3px 0 0 #0b9489;
+}
+
+.body-panel-footer {
+  flex-shrink: 0;
+  padding: 15px;
+  border-top: 1px solid #e0ebec;
+}
+
+.clear-button {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #cce2e2;
+  border-radius: 11px;
+  background: #e5f0f1;
+  color: #164047;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.clear-button:hover { background: #d5eae9; }
+
+/* Therapy reference panel */
+.preset-panel {
+  position: absolute;
+  z-index: 7;
+  top: 110px;
+  right: 24px;
+  bottom: 24px;
+  width: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(calc(100% + 45px));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform .42s cubic-bezier(.22, 1, .36, 1), opacity .28s ease, visibility .42s;
+}
+
+.preset-panel.open {
+  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.preset-header {
+  flex-shrink: 0;
+  padding: 15px 17px;
+  background: linear-gradient(150deg, rgba(241, 254, 250, .93), rgba(226, 246, 243, .83));
+  border-bottom: 1px solid #d7e9e7;
+}
+
+.preset-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preset-eyebrow {
+  display: block;
+  color: var(--teal-dark);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 9px;
+}
+
+#presetBodyTitle {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.preset-close {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid #d9e8e9;
+  border-radius: 10px;
+  background: #fff;
+  color: #53737a;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.preset-fact-container {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, .55);
+  border: 1px solid #b5ddd8;
+  border-radius: 11px;
+}
+
+.preset-fact-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--teal-dark);
+  letter-spacing: 1px;
+}
+
+.preset-intro {
+  margin: 0;
+  color: #4f7278;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.preset-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #b1d3d0 transparent;
+}
+
+.preset-count {
+  margin-bottom: 13px;
+  color: #799198;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+/* Acute and chronic definitions */
+.condition-guide {
+  padding: 10px 12px;
+  margin: -2px 0 14px;
+  background: rgba(241, 249, 248, .93);
+  border: 1px solid #d8e9e6;
+  border-radius: 10px;
+}
+
+.condition-guide p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #557178;
+  margin: 0;
+}
+
+.condition-guide p + p { margin-top: 4px; }
+.condition-guide strong { color: #184c52; }
+
+/* Therapy preset cards */
+#presetList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.preset-card {
+  min-width: 0;
+  padding: 12px;
+  background: rgba(251, 254, 254, .93);
+  border: 1px solid #d8e8e9;
+  border-radius: 13px;
+  box-shadow: 0 3px 12px rgba(29, 73, 79, .04);
+  transition: transform .24s, box-shadow .24s;
+}
+
+.preset-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 24px rgba(23, 70, 76, .11);
+}
+
+.preset-card.cool { border-left: 4px solid #0aa4b5; }
+.preset-card.heat { border-left: 4px solid #f09a61; }
+.preset-card.contrast { border-left: 4px solid #8874c7; }
+
+.preset-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.preset-name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.preset-badge {
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.preset-badge.cool { background: #ddf5f8; color: #078493; }
+.preset-badge.heat { background: #fff0e7; color: #c76d31; }
+.preset-badge.contrast { background: #eee9ff; color: #6954b0; }
+
+.preset-condition {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.preset-condition.acute { background: #e8f6fa; color: #247d8e; }
+.preset-condition.chronic { background: #fff1e8; color: #b76b3f; }
+
+.preset-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.preset-detail {
+  padding: 9px;
+  background: #fff;
+  border: 1px solid #e5eeef;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.preset-detail-label {
+  display: block;
+  font-size: 10px;
+  color: #81979d;
+  margin-bottom: 7px;
+}
+
+.preset-detail-value {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.cool-value { color: #088997; }
+.heat-value { color: #c77743; }
+
+.preset-phase {
+  margin-top: 12px;
+  padding: 11px 12px;
+  background: #f0ecfc;
+  border: 1px solid #e0d9f5;
+  border-radius: 10px;
+}
+
+.preset-phase-title {
+  font-size: 10px;
+  font-weight: 900;
+  color: #6653a4;
+  margin-bottom: 6px;
+}
+
+.preset-phase-text {
+  font-size: 11px;
+  color: #6f6295;
+  line-height: 1.6;
+}
+
+.preset-empty {
+  grid-column: 1 / -1;
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed #c9dfdf;
+  border-radius: 13px;
+  background: #f8fcfb;
+  font-size: 12px;
+}
+
+.preset-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid #e0ebec;
+  background: rgba(251, 253, 253, .82);
+}
+
+.preset-footer p {
+  margin: 0;
+  color: #526e75;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Why this therapy? */
+.preset-why {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #d3ece7;
+  border-radius: 9px;
+  background: #eef9f7;
+}
+
+.preset-why strong {
+  font-size: 10px;
+  letter-spacing: .6px;
+  color: #007d74;
+}
+
+.preset-why p {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #466a6e;
+}
+
+/* Collapsible safety information */
+.preset-safety {
+  margin-top: 9px;
+  border: 1px solid #dee8e6;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.preset-safety summary {
+  padding: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  color: #557176;
+}
+
+.preset-safety-content {
+  padding: 0 10px 10px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #587178;
+}
+
+.preset-safety-content p { margin: 0 0 7px; }
+
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+
+/* Responsive layout */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .body-panel { width: 255px; }
+  .preset-panel { width: min(480px, calc(100vw - 310px)); }
+}
+
+@media (max-width: 767px) {
+  .site-header {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 12px 14px;
+    min-height: 60px;
+  }
+
+  .brand { font-size: 22px; }
+  .header-caption { display: none; }
+  .menu-toggle { display: block; }
+
+  .body-panel {
+    top: 82px;
+    left: 10px;
+    bottom: 12px;
+    width: min(285px, calc(100% - 20px));
+    transform: translateX(calc(-100% - 20px));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform .35s, opacity .25s;
+  }
+
+  .body-panel.open {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .preset-panel {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    max-height: 80%;
+    transform: translateY(calc(100% + 30px));
+  }
+
+  .preset-panel.open { transform: translateY(0); }
+  #presetList { grid-template-columns: 1fr; }
+  .preset-details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .preset-header { padding: 16px; }
+  #presetBodyTitle { font-size: 20px; }
+  .preset-scroll { padding: 13px; }
+  .preset-footer { padding: 11px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+
+<body>
+<main class="clinic-stage">
+  <div id="viewer"></div>
+
+  <!-- Loading screen -->
+  <div id="loading" role="status" aria-live="polite">
+    <div class="fc-loader">
+      <svg class="fc-pad" viewBox="0 0 340 265" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="padMaterial" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fff"/>
+            <stop offset="100%" stop-color="#c5ddda"/>
+          </linearGradient>
+          <linearGradient id="padInset" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f5fffc"/>
+            <stop offset="100%" stop-color="#d7f0e9"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Original pad housing -->
+        <rect x="74" y="49" width="192" height="141" rx="31" fill="#8cafab"/>
+        <rect x="69" y="43" width="192" height="141" rx="31"
+              fill="url(#padMaterial)" stroke="#a6c8c4" stroke-width="3"/>
+        <rect x="79" y="53" width="172" height="119" rx="24"
+              fill="url(#padInset)" stroke="#fff" stroke-width="2"/>
+
+        <!-- Water circulation channel inside the pad -->
+        <path class="fc-pad-tube"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z"/>
+        <path class="fc-tube-water"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z"/>
+
+        <!-- Moving teal water segments -->
+        <path class="fc-pad-water"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z">
+          <animate attributeName="stroke-dashoffset"
+                   from="0" to="-54" dur="1.4s" repeatCount="indefinite"/>
+        </path>
+
+        <!-- Moving water reflections -->
+        <path class="fc-water-shimmer"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z">
+          <animate attributeName="stroke-dashoffset"
+                   from="0" to="-54" dur="1.4s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+
+      <div class="fc-loader-brand">
+        <span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span>
+      </div>
+      <p id="fcLoadMessage" class="fc-loader-message">Preparing your FahrenCool experience...</p>
+      <div class="fc-loading-dots" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main interface -->
+  <div class="ui-layer">
+    <header class="site-header">
+      <div>
+        <div class="brand">
+          <span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span>
+        </div>
+        <div class="brand-subtitle">BODY REGION QUICK REFERENCE</div>
+      </div>
+      <button id="menuToggle" class="menu-toggle" type="button"
+              aria-controls="bodyPanel" aria-expanded="false">Body Parts</button>
+    </header>
+
+    <!-- Body parts -->
+    <aside id="bodyPanel" class="body-panel glass-panel" aria-label="Body parts">
+      <div class="body-panel-header">
+        <h2>Body Parts</h2>
+        <p>Select an anatomical region to explore its associated therapeutic configurations.</p>
+      </div>
+      <div class="body-list">
+        <div id="bodyParts"></div>
+      </div>
+      <div class="body-panel-footer">
+        <button id="clear" class="clear-button" type="button">Clear Selection</button>
+      </div>
+    </aside>
+
+    <!-- Therapy reference -->
+    <aside id="presetPanel" class="preset-panel glass-panel"
+           aria-label="Associated therapy presets" aria-hidden="true" inert>
+      <div class="preset-header">
+        <div class="preset-heading-row">
+          <div>
+            <span class="preset-eyebrow">FAHRENCOOL THERAPY REFERENCE</span>
+            <h2 id="presetBodyTitle">Body Part</h2>
+          </div>
+          <button id="closePresetPanel" class="preset-close"
+                  type="button" aria-label="Close preset panel">&times;</button>
+        </div>
+        <div class="preset-fact-container">
+          <span class="preset-fact-label">DID YOU KNOW?</span>
+          <p id="presetBodyFact" class="preset-intro">
+            Select an anatomical region to learn about its structure.
+          </p>
+        </div>
+      </div>
+
+      <div class="preset-scroll">
+        <div id="presetCount" class="preset-count"></div>
+        <div class="condition-guide" aria-label="Condition definitions">
+          <p><strong>Acute:</strong> First 48–72 hours after an injury.</p>
+          <p><strong>Chronic:</strong> Ongoing stiffness or pain beyond that.</p>
+        </div>
+        <div id="presetList"></div>
+      </div>
+
+      <div class="preset-footer">
+        <p>
+          Therapy configurations were reviewed and validated by a Registered Physical Therapist,
+          with signed documentation supporting this study.
+        </p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+// External data
+import { REGIONS } from "./data/bodyRegions.js";
+import { THERAPY_PRESETS } from "./data/therapyPresets.js";
+import { BODY_FACTS } from "./data/bodyFacts.js";
+import { THERAPY_GUIDANCE } from "./data/therapyGuidance.js";
+
+// Model configuration
+import {
+  HUMAN_MODEL_URL,
+  CLINIC_MODEL_URL,
+  RUG_NAME,
+  FRONT_DIRECTION,
+  SKIN_HEX,
+  HIGHLIGHT_HEX
+} from "./config/modelConfig.js";
+
+// Animation configuration
+import {
+  CLINIC_ANIMATION,
+  HIGHLIGHT_ANIMATION
+} from "./config/animationConfig.js";
+
+// Lighting configuration
+import {
+  HUMAN_SHADOW,
+  CLINIC_SHADOW
+} from "./config/lightingConfig.js";
+
+const SKIN_COLOR = new THREE.Color(SKIN_HEX);
+const HIGHLIGHT_COLOR = new THREE.Color(HIGHLIGHT_HEX);
+const reducedMotion = matchMedia("(prefers-reduced-motion:reduce)");
+const mobileQuery = matchMedia("(max-width:767px)");
+
+// DOM elements
+const viewer = document.getElementById("viewer");
+const loading = document.getElementById("loading");
+const loadMessage = document.getElementById("fcLoadMessage");
+const bodyPanel = document.getElementById("bodyPanel");
+const menuToggle = document.getElementById("menuToggle");
+const presetPanel = document.getElementById("presetPanel");
+const presetTitle = document.getElementById("presetBodyTitle");
+const presetFact = document.getElementById("presetBodyFact");
+const presetCount = document.getElementById("presetCount");
+const presetList = document.getElementById("presetList");
+
+// Three.js setup
+const clinicScene = new THREE.Scene();
+const bodyScene = new THREE.Scene();
+clinicScene.background = new THREE.Color("#e5efed");
+
+const camera = new THREE.PerspectiveCamera(32, 1, .01, 1000);
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+renderer.autoClear = false;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+viewer.appendChild(renderer.domElement);
+
+const loader = new GLTFLoader();
+const clock = new THREE.Clock();
+const clinicGroup = new THREE.Group();
+const bodyRoot = new THREE.Group();
+const shadowGroup = new THREE.Group();
+
+clinicScene.add(clinicGroup);
+bodyScene.add(bodyRoot);
+bodyScene.add(shadowGroup);
+
+// Application state
+const meshData = [];
+let bodyHeight = 1.7;
+let modelReady = false;
+let loadedModels = 0;
+let failedModels = false;
+let targetBodyRotationY = 0;
+let activeRegionId = null;
+let isDragging = false;
+let activePointer = null;
+let lastPointerX = 0;
+let pointerStartX = 0;
+let pointerStartY = 0;
+let pointerDidDrag = false;
+let mouseX = 0;
+let clinicTime = 0;
+let clinicRotation = 0;
+let clinicOffset = 0;
+let highlightTime = 0;
+
+// Automatic rug state
+let rugObject = null;
+let rugAnchorLocal = null;
+const rugCenterWorld = new THREE.Vector3();
+const humanFeetWorld = new THREE.Vector3();
+const rugDeltaWorld = new THREE.Vector3();
+const rugDeltaLocal = new THREE.Vector3();
+const rugInverseParent = new THREE.Matrix4();
+
+// Model loading
+function finishModelLoading() {
+  loadedModels++;
+  if (loadedModels === 2 && !failedModels) {
+    loading.classList.add("hidden");
+  }
+}
+
+function failModelLoading(name, error) {
+  failedModels = true;
+  console.error(name, error);
+  loading.classList.add("failed");
+  loadMessage.textContent = `Could not load ${name}. Check the model files and local server.`;
+}
+
+// Lighting
+function addLights(scene, clinic = false) {
+  scene.add(new THREE.HemisphereLight(
+    0xf4ffff, 0x899d9b, clinic ? 1.45 : 2.05
+  ));
+
+  const key = new THREE.DirectionalLight(
+    0xfff3e4, clinic ? CLINIC_SHADOW.lightIntensity : 2.3
+  );
+  key.position.set(4, 6, 5);
+  scene.add(key);
+
+  if (clinic) {
+    key.castShadow = true;
+    const res = mobileQuery.matches
+      ? CLINIC_SHADOW.mobileResolution
+      : CLINIC_SHADOW.desktopResolution;
+
+    key.shadow.mapSize.set(res, res);
+    key.shadow.bias = CLINIC_SHADOW.bias;
+    key.shadow.normalBias = CLINIC_SHADOW.normalBias;
+    key.shadow.camera.near = .1;
+    key.shadow.camera.far = 40;
+  }
+
+  const fill = new THREE.DirectionalLight(0xd5f6ff, clinic ? .72 : .85);
+  fill.position.set(-4, 3, -3);
+  scene.add(fill);
+
+  if (!clinic) {
+    const rimLeft = new THREE.DirectionalLight(0x94f5e7, .52);
+    rimLeft.position.set(-3, 3, -4);
+    scene.add(rimLeft);
+
+    const rimRight = new THREE.DirectionalLight(0xffe5d1, .28);
+    rimRight.position.set(3, 3, -4);
+    scene.add(rimRight);
+  }
+
+  return key;
+}
+
+const clinicKeyLight = addLights(clinicScene, true);
+addLights(bodyScene, false);
+
+// Panel controls
+function setMobileMenu(open) {
+  bodyPanel.classList.toggle("open", open);
+  menuToggle.setAttribute("aria-expanded", String(open));
+}
+
+menuToggle.addEventListener("click", () => {
+  setMobileMenu(!bodyPanel.classList.contains("open"));
+});
+
+function closePresetPanel() {
+  presetPanel.classList.remove("open");
+  presetPanel.setAttribute("aria-hidden", "true");
+  presetPanel.inert = true;
+}
+
+document.getElementById("closePresetPanel").addEventListener("click", closePresetPanel);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closePresetPanel();
+    setMobileMenu(false);
+  }
+});
+
+// Normalize body part names
+function normalizeBodyPart(value) {
+  const text = String(value || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (/lower\s*back|lumbar/.test(text)) return "lower back";
+  if (/upper\s*back|thoracic/.test(text)) return "upper back";
+  if (/hip|gluteal|glute|buttock/.test(text)) return "hip/gluteal";
+  if (/neck|cervical/.test(text)) return "neck";
+  if (/shoulder/.test(text)) return "shoulder";
+  if (/elbow/.test(text)) return "elbow";
+  if (/thigh|quadriceps|hamstring/.test(text)) return "thigh";
+  if (/knee/.test(text)) return "knee";
+  if (/calf|calves/.test(text)) return "calf";
+  if (/ankle/.test(text)) return "ankle";
+
+  return text;
+}
+
+function getMatchingPresets(regionId, region) {
+  const name = normalizeBodyPart(region.name || regionId);
+  const id = normalizeBodyPart(regionId);
+
+  return THERAPY_PRESETS.filter(preset =>
+    normalizeBodyPart(preset.bodyPart) === name ||
+    normalizeBodyPart(preset.bodyPart) === id
+  );
+}
+
+// Create therapy preset cards
+function createPresetCard(preset) {
+  const type = preset.mode.toLowerCase();
+  const card = document.createElement("article");
+  card.className = "preset-card " + type;
+
+  const top = document.createElement("div");
+  top.className = "preset-card-top";
+
+  const name = document.createElement("div");
+  name.className = "preset-name";
+  name.textContent = preset.name;
+
+  const badge = document.createElement("span");
+  badge.className = "preset-badge " + type;
+  badge.textContent = preset.mode === "COOL" ? "COOLING"
+    : preset.mode === "HEAT" ? "HEATING" : "CONTRAST";
+
+  top.append(name, badge);
+
+  const condition = document.createElement("div");
+  condition.className = "preset-condition " + preset.condition.toLowerCase();
+  condition.textContent = preset.condition + " Condition";
+
+  const details = document.createElement("div");
+  details.className = "preset-details";
+
+  function addDetail(label, value, colorClass = "") {
+    const item = document.createElement("div");
+    item.className = "preset-detail";
+
+    const caption = document.createElement("span");
+    caption.className = "preset-detail-label";
+    caption.textContent = label;
+
+    const number = document.createElement("div");
+    number.className = "preset-detail-value " + colorClass;
+    number.textContent = value;
+
+    item.append(caption, number);
+    details.appendChild(item);
+  }
+
+  addDetail(
+    "Temperature Range",
+    preset.temperature,
+    type === "cool" ? "cool-value" : type === "heat" ? "heat-value" : ""
+  );
+  addDetail("Session Duration", preset.duration);
+  card.append(top, condition, details);
+
+  if (preset.phases) {
+    const phase = document.createElement("div");
+    phase.className = "preset-phase";
+
+    const title = document.createElement("div");
+    title.className = "preset-phase-title";
+    title.textContent = "CONTRAST THERAPY CYCLE";
+
+    const description = document.createElement("div");
+    description.className = "preset-phase-text";
+    description.textContent = preset.phases;
+
+    phase.append(title, description);
+    card.appendChild(phase);
+  }
+
+  // Why this therapy?
+  const guidance = THERAPY_GUIDANCE[preset.mode] || THERAPY_GUIDANCE.COOL;
+  const why = document.createElement("section");
+  why.className = "preset-why";
+
+  const whyHeading = document.createElement("strong");
+  whyHeading.textContent = "WHY THIS THERAPY?";
+
+  const whyText = document.createElement("p");
+  whyText.textContent = guidance.why;
+
+  why.append(whyHeading, whyText);
+  card.appendChild(why);
+
+  // Collapsible safety information
+  const safety = document.createElement("details");
+  safety.className = "preset-safety";
+
+  const safetyHeading = document.createElement("summary");
+  safetyHeading.textContent = "Safety Information";
+
+  const safetyContent = document.createElement("div");
+  safetyContent.className = "preset-safety-content";
+
+  const safetyText = document.createElement("p");
+  safetyText.textContent = guidance.safety;
+  safetyContent.appendChild(safetyText);
+
+  if (normalizeBodyPart(preset.bodyPart) === "neck") {
+    const neckText = document.createElement("p");
+    neckText.textContent =
+      "For neck applications, avoid the front and sides of the neck; seek guidance from a qualified clinician.";
+    safetyContent.appendChild(neckText);
+  }
+
+  const note = document.createElement("p");
+  note.textContent =
+    "Educational reference only. Listed device temperature ranges are not confirmed skin-contact limits; this webpage does not control the prototype.";
+  safetyContent.appendChild(note);
+
+  safety.append(safetyHeading, safetyContent);
+  card.appendChild(safety);
+  return card;
+}
+
+// Open selected therapy reference
+function openPresetPanel(regionId) {
+  const region = REGIONS[regionId];
+  if (!region) return;
+
+  const name = normalizeBodyPart(region.name || regionId);
+  presetTitle.textContent = region.name || regionId;
+  presetFact.textContent =
+    BODY_FACTS[name] ||
+    BODY_FACTS[normalizeBodyPart(regionId)] ||
+    "This anatomical region contributes to movement and stability.";
+
+  const matches = getMatchingPresets(regionId, region);
+  presetList.replaceChildren();
+
+  presetCount.textContent = matches.length
+    ? `${matches.length} ASSOCIATED ${matches.length === 1 ? "PRESET" : "PRESETS"}`
+    : "NO DIRECT PRESET MATCH";
+
+  if (matches.length) {
+    matches.forEach(preset => presetList.appendChild(createPresetCard(preset)));
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "preset-empty";
+    empty.textContent = "No preset configured for this region.";
+    presetList.appendChild(empty);
+  }
+
+  presetPanel.querySelector(".preset-scroll").scrollTop = 0;
+  presetPanel.inert = false;
+  presetPanel.setAttribute("aria-hidden", "false");
+  presetPanel.classList.add("open");
+
+  if (mobileQuery.matches) setMobileMenu(false);
+}
+
+// Automatically center the rug beneath the human
+function updateRugFollowing() {
+  if (!rugObject || !rugAnchorLocal || !modelReady) return;
+
+  clinicGroup.updateWorldMatrix(true, true);
+  bodyRoot.updateWorldMatrix(true, false);
+
+  humanFeetWorld.set(0, 0, 0);
+  bodyRoot.localToWorld(humanFeetWorld);
+
+  rugCenterWorld.copy(rugAnchorLocal);
+  rugObject.localToWorld(rugCenterWorld);
+
+  rugDeltaWorld.set(
+    humanFeetWorld.x - rugCenterWorld.x,
+    0,
+    humanFeetWorld.z - rugCenterWorld.z
+  );
+
+  if (rugObject.parent) {
+    rugObject.parent.updateWorldMatrix(true, false);
+    rugInverseParent.copy(rugObject.parent.matrixWorld).invert();
+
+    const e = rugInverseParent.elements;
+    const { x, y, z } = rugDeltaWorld;
+
+    rugDeltaLocal.set(
+      e[0] * x + e[4] * y + e[8] * z,
+      e[1] * x + e[5] * y + e[9] * z,
+      e[2] * x + e[6] * y + e[10] * z
+    );
+  } else {
+    rugDeltaLocal.copy(rugDeltaWorld);
+  }
+
+  rugObject.position.add(rugDeltaLocal);
+  rugObject.updateWorldMatrix(false, true);
+}
+
+// Contact shadow texture
+function createShadowTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(128, 128, 6, 128, 128, 126);
+
+  gradient.addColorStop(0, "rgba(26,45,48,.80)");
+  gradient.addColorStop(.20, "rgba(26,45,48,.62)");
+  gradient.addColorStop(.45, "rgba(26,45,48,.30)");
+  gradient.addColorStop(.72, "rgba(26,45,48,.08)");
+  gradient.addColorStop(1, "rgba(26,45,48,0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 256, 256);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function setupHumanShadow(H) {
+  const texture = createShadowTexture();
+
+  function addShadow(width, depth, opacity, y) {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, depth),
+      new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+        toneMapped: false
+      })
+    );
+
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(0, y, H * HUMAN_SHADOW.offsetZ);
+    shadowGroup.add(mesh);
+  }
+
+  addShadow(
+    H * HUMAN_SHADOW.width,
+    H * HUMAN_SHADOW.depth,
+    HUMAN_SHADOW.opacity * .65,
+    H * HUMAN_SHADOW.offsetY
+  );
+  addShadow(
+    H * HUMAN_SHADOW.width * .52,
+    H * HUMAN_SHADOW.depth * .52,
+    HUMAN_SHADOW.opacity,
+    H * (HUMAN_SHADOW.offsetY + .002)
+  );
+}
+
+// Clinic environment
+function clinicMaterial(color, roughness = .9) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness,
+    side: THREE.DoubleSide
+  });
+}
+
+function buildClinicShell(H) {
+  const W = H * 10;
+  const roomHeight = H * 3;
+  const wallZ = -H * 2.6;
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, H * 8),
+    clinicMaterial("#dbe8e6")
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -H * .055;
+  floor.receiveShadow = true;
+  clinicGroup.add(floor);
+
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, roomHeight),
+    clinicMaterial("#e9f2f0")
+  );
+  wall.position.set(0, roomHeight / 2 - H * .05, wallZ);
+  wall.receiveShadow = true;
+  clinicGroup.add(wall);
+
+  const trim = new THREE.Mesh(
+    new THREE.BoxGeometry(W, H * .03, H * .03),
+    clinicMaterial("#b6d2cd")
+  );
+  trim.position.set(0, H * .12, wallZ + H * .02);
+  clinicGroup.add(trim);
+
+  const topBand = new THREE.Mesh(
+    new THREE.BoxGeometry(W, H * .06, H * .05),
+    clinicMaterial("#f7fbfa")
+  );
+  topBand.position.set(0, H * 2.8, wallZ + H * .03);
+  clinicGroup.add(topBand);
+
+  const windowFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(H * 1.2, H * .82, H * .05),
+    clinicMaterial("#ffffff")
+  );
+  windowFrame.position.set(-H * 2.4, H * 1.5, wallZ + H * .06);
+  clinicGroup.add(windowFrame);
+
+  const windowPane = new THREE.Mesh(
+    new THREE.PlaneGeometry(H * 1.08, H * .70),
+    clinicMaterial("#d8f0f3", .4)
+  );
+  windowPane.position.set(-H * 2.4, H * 1.5, wallZ + H * .091);
+  clinicGroup.add(windowPane);
+
+  const artFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(H * .82, H * .92, H * .05),
+    clinicMaterial("#d3c0aa")
+  );
+  artFrame.position.set(H * 2.4, H * 1.52, wallZ + H * .06);
+  clinicGroup.add(artFrame);
+
+  const artPanel = new THREE.Mesh(
+    new THREE.PlaneGeometry(H * .72, H * .82),
+    clinicMaterial("#fcfffe")
+  );
+  artPanel.position.set(H * 2.4, H * 1.52, wallZ + H * .091);
+  clinicGroup.add(artPanel);
+}
+
+function configureClinicShadowCamera(H) {
+  const cam = clinicKeyLight.shadow.camera;
+  const extent = H * 4;
+
+  cam.left = -extent;
+  cam.right = extent;
+  cam.top = extent;
+  cam.bottom = -extent;
+  cam.near = Math.max(.01, H * .1);
+  cam.far = H * 30;
+  cam.updateProjectionMatrix();
+
+  clinicKeyLight.position.set(H * 2.5, H * 4.5, H * 2.6);
+  clinicKeyLight.target.position.set(0, H * .8, -H * .8);
+  clinicScene.add(clinicKeyLight.target);
+}
+
+// Load the clinic model
+function loadClinicModel(H) {
+  loader.load(CLINIC_MODEL_URL, gltf => {
+    const clinicModel = gltf.scene;
+    clinicGroup.add(clinicModel);
+    clinicModel.updateMatrixWorld(true);
+
+    const bounds = new THREE.Box3().setFromObject(clinicModel);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+
+    const scale = Math.min(
+      H * 2.45 / Math.max(size.y, .001),
+      H * 3.9 / Math.max(size.x, .001),
+      H * 2.8 / Math.max(size.z, .001)
+    );
+
+    clinicModel.scale.setScalar(scale);
+    clinicModel.position.set(
+      -center.x * scale,
+      -bounds.min.y * scale,
+      -center.z * scale - H * .78
+    );
+    clinicModel.updateMatrixWorld(true);
+
+    rugObject = clinicModel.getObjectByName(RUG_NAME);
+
+    if (rugObject) {
+      const rugBounds = new THREE.Box3().setFromObject(rugObject);
+      const centerWorld = rugBounds.getCenter(new THREE.Vector3());
+
+      rugAnchorLocal = rugObject.worldToLocal(centerWorld.clone());
+      updateRugFollowing();
+    } else {
+      console.warn("[FahrenCool] Rug not found:", RUG_NAME);
+    }
+
+    clinicModel.traverse(object => {
+      if (!object.isMesh) return;
+
+      object.receiveShadow = true;
+      let hierarchy = "";
+      let node = object;
+
+      while (node && node !== clinicModel) {
+        hierarchy += " " + (node.name || "").toLowerCase();
+        node = node.parent;
+      }
+
+      const furniture = /desk|stool|chair|couch|bed|trolley|cabinet/.test(hierarchy);
+      const excluded = /floor-mat|rug|carpet|curtain|wall|ceiling|glass/.test(hierarchy);
+      object.castShadow = furniture && !excluded;
+    });
+
+    finishModelLoading();
+  }, undefined, error => {
+    failModelLoading("clinic model.glb", error);
+  });
+}
+
+// Load the human model
+loader.load(HUMAN_MODEL_URL, gltf => {
+  const body = gltf.scene;
+  bodyRoot.add(body);
+  body.updateMatrixWorld(true);
+
+  let bounds = new THREE.Box3().setFromObject(body);
+  const center = bounds.getCenter(new THREE.Vector3());
+
+  body.position.x -= center.x;
+  body.position.y -= bounds.min.y;
+  body.position.z -= center.z;
+  body.updateMatrixWorld(true);
+
+  bounds = new THREE.Box3().setFromObject(body);
+  const size = bounds.getSize(new THREE.Vector3());
+
+  bodyHeight = Math.max(size.y, .001);
+  const halfWidth = Math.max(size.x / 2, .001);
+  const centerX = bounds.getCenter(new THREE.Vector3()).x;
+
+  const point = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+  const normalMatrix = new THREE.Matrix3();
+
+  body.traverse(object => {
+    if (!object.isMesh) return;
+
+    object.geometry = object.geometry.clone();
+    const geometry = object.geometry;
+    const positions = geometry.getAttribute("position");
+
+    if (!geometry.getAttribute("normal")) {
+      geometry.computeVertexNormals();
+    }
+
+    const normals = geometry.getAttribute("normal");
+    const count = positions.count;
+    const colors = new Float32Array(count * 3);
+    const coordinates = new Float32Array(count * 4);
+
+    object.updateWorldMatrix(true, false);
+    normalMatrix.getNormalMatrix(object.matrixWorld);
+
+    for (let i = 0; i < count; i++) {
+      point.fromBufferAttribute(positions, i)
+        .applyMatrix4(object.matrixWorld);
+
+      normal.fromBufferAttribute(normals, i)
+        .applyMatrix3(normalMatrix)
+        .normalize();
+
+      coordinates[i * 4] = (point.x - centerX) / halfWidth;
+      coordinates[i * 4 + 1] = (point.y - bounds.min.y) / bodyHeight;
+      coordinates[i * 4 + 2] = normal.x;
+      coordinates[i * 4 + 3] = normal.z * FRONT_DIRECTION;
+
+      colors[i * 3] = SKIN_COLOR.r;
+      colors[i * 3 + 1] = SKIN_COLOR.g;
+      colors[i * 3 + 2] = SKIN_COLOR.b;
+    }
+
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geometry.attributes.color.setUsage(THREE.DynamicDrawUsage);
+
+    object.material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+      roughness: .86,
+      metalness: 0,
+      side: THREE.DoubleSide
+    });
+
+    meshData.push({
+      geometry,
+      coordinates,
+      colors,
+      currentMask: new Float32Array(count),
+      targetMask: new Float32Array(count),
+      active: false
+    });
+  });
+
+  buildClinicShell(bodyHeight);
+  configureClinicShadowCamera(bodyHeight);
+  setupHumanShadow(bodyHeight);
+
+  modelReady = true;
+  resize();
+  setBodyView("front", false);
+  loadClinicModel(bodyHeight);
+  finishModelLoading();
+}, undefined, error => {
+  failModelLoading("human scene.gltf", error);
+});
+
+// Camera framing
+function updateCamera() {
+  if (!modelReady) return;
+
+  const savedRotation = bodyRoot.rotation.y;
+  const savedX = bodyRoot.position.x;
+
+  bodyRoot.rotation.y = 0;
+  bodyRoot.position.x = 0;
+  bodyRoot.updateMatrixWorld(true);
+
+  const bounds = new THREE.Box3().setFromObject(bodyRoot);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+
+  bodyRoot.rotation.y = savedRotation;
+  bodyRoot.position.x = savedX;
+  bodyRoot.updateMatrixWorld(true);
+
+  const aspect = Math.max(viewer.clientWidth / Math.max(viewer.clientHeight, 1), .1);
+  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+
+  const distanceY = (size.y / 2) / Math.tan(vfov / 2);
+  const distanceX = (size.x / 2) / Math.tan(hfov / 2);
+  const distance = Math.max(distanceY, distanceX) * 1.25 + size.z / 2;
+  const aimY = center.y + bodyHeight * .025;
+
+  camera.position.set(center.x, aimY, center.z + distance);
+  camera.lookAt(center.x, aimY, center.z);
+  camera.near = Math.max(.001, distance / 1000);
+  camera.far = distance * 25;
+  camera.updateProjectionMatrix();
+}
+
+// Human orientation
+function setBodyView(side, animate = true) {
+  const destination = side === "back" ? Math.PI : 0;
+  const current = bodyRoot.rotation.y;
+  const difference = Math.atan2(
+    Math.sin(destination - current),
+    Math.cos(destination - current)
+  );
+
+  targetBodyRotationY = current + difference;
+  if (!animate) bodyRoot.rotation.y = targetBodyRotationY;
+}
+
+// Click-to-select and drag-to-rotate controls
+viewer.addEventListener("pointerdown", event => {
+  if (!modelReady || isDragging) return;
+
+  isDragging = true;
+  activePointer = event.pointerId;
+  lastPointerX = event.clientX;
+  pointerStartX = event.clientX;
+  pointerStartY = event.clientY;
+  pointerDidDrag = false;
+
+  viewer.classList.add("dragging");
+  viewer.setPointerCapture(activePointer);
+});
+
+viewer.addEventListener("pointermove", event => {
+  const rect = viewer.getBoundingClientRect();
+  mouseX = THREE.MathUtils.clamp(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1, -1, 1
+  );
+
+  if (!isDragging || event.pointerId !== activePointer) return;
+
+  const movement = Math.hypot(
+    event.clientX - pointerStartX,
+    event.clientY - pointerStartY
+  );
+
+  if (movement > 7) pointerDidDrag = true;
+
+  const dx = pointerDidDrag ? event.clientX - lastPointerX : 0;
+  lastPointerX = event.clientX;
+  targetBodyRotationY += dx * .01;
+});
+
+function stopDragging(event) {
+  if (!isDragging) return;
+  if (event && event.pointerId !== activePointer) return;
+
+  isDragging = false;
+  viewer.classList.remove("dragging");
+
+  if (activePointer !== null && viewer.hasPointerCapture(activePointer)) {
+    viewer.releasePointerCapture(activePointer);
+  }
+  activePointer = null;
+}
+
+viewer.addEventListener("pointerup", event => {
+  if (
+    isDragging &&
+    event.pointerId === activePointer &&
+    !pointerDidDrag &&
+    Math.hypot(
+      event.clientX - pointerStartX,
+      event.clientY - pointerStartY
+    ) <= 7
+  ) {
+    selectRegionFromBodyClick(event);
+  }
+  stopDragging(event);
+});
+
+viewer.addEventListener("pointercancel", stopDragging);
+viewer.addEventListener("pointerleave", () => {
+  if (!isDragging) mouseX = 0;
+});
+
+// Region surface detection
+function getSurfaceMask(nx, nz, surface) {
+  if (surface === "both") return 1;
+  if (surface === "front") return THREE.MathUtils.smoothstep(nz, .10, .45);
+  if (surface === "back") return THREE.MathUtils.smoothstep(-nz, .10, .45);
+
+  if (surface === "frontSide") {
+    const front = THREE.MathUtils.smoothstep(nz, -.05, .35);
+    const side = THREE.MathUtils.smoothstep(Math.abs(nx), .20, .75);
+    const notBack = THREE.MathUtils.smoothstep(nz, -.20, .05);
+    return Math.max(front, side * notBack * .9);
+  }
+  return 0;
+}
+
+// Clickable 3D anatomical regions
+const bodyRaycaster = new THREE.Raycaster();
+const bodyClickNDC = new THREE.Vector2();
+const barycentric = new THREE.Vector3();
+const triangleA = new THREE.Vector3();
+const triangleB = new THREE.Vector3();
+const triangleC = new THREE.Vector3();
+
+function selectRegionFromBodyClick(event) {
+  if (!modelReady) return;
+
+  const rect = viewer.getBoundingClientRect();
+  bodyClickNDC.set(
+    2 * (event.clientX - rect.left) / rect.width - 1,
+    1 - 2 * (event.clientY - rect.top) / rect.height
+  );
+
+  bodyRaycaster.setFromCamera(bodyClickNDC, camera);
+  const hits = bodyRaycaster.intersectObject(bodyRoot, true);
+  const hit = hits[0];
+  if (!hit || !hit.face) return;
+
+  const mesh = meshData.find(item => item.geometry === hit.object.geometry);
+  if (!mesh) return;
+
+  const position = mesh.geometry.getAttribute("position");
+  const { a, b, c } = hit.face;
+
+  triangleA.fromBufferAttribute(position, a);
+  triangleB.fromBufferAttribute(position, b);
+  triangleC.fromBufferAttribute(position, c);
+
+  const localPoint = hit.object.worldToLocal(hit.point.clone());
+  THREE.Triangle.getBarycoord(
+    localPoint, triangleA, triangleB, triangleC, barycentric
+  );
+
+  if (![barycentric.x, barycentric.y, barycentric.z].every(Number.isFinite)) {
+    return;
+  }
+
+  const data = mesh.coordinates;
+  const interpolate = k =>
+    data[4 * a + k] * barycentric.x +
+    data[4 * b + k] * barycentric.y +
+    data[4 * c + k] * barycentric.z;
+
+  const x = interpolate(0);
+  const y = interpolate(1);
+  const nx = interpolate(2);
+  const nz = interpolate(3);
+
+  let selectedId = null;
+  let highestScore = 0;
+
+  for (const [id, region] of Object.entries(REGIONS)) {
+    const xDist = region.both ? Math.abs(x) - region.x : x - region.x;
+    const dx = xDist / region.rx;
+    const dy = (y - region.y) / region.ry;
+    const distance = Math.hypot(dx, dy);
+    if (distance > 1.05) continue;
+
+    const surface = getSurfaceMask(nx, nz, region.surface);
+    const score = (1 - THREE.MathUtils.smoothstep(distance, .35, 1.05)) * surface;
+
+    if (score > highestScore && score > .08) {
+      highestScore = score;
+      selectedId = id;
+    }
+  }
+
+  if (selectedId) highlightBodyPart(selectedId);
+}
+
+// Highlight selected body part
+function highlightBodyPart(regionId) {
+  if (!modelReady) return;
+
+  const region = regionId ? REGIONS[regionId] : null;
+  activeRegionId = regionId;
+  highlightTime = 0;
+
+  for (const mesh of meshData) {
+    const { coordinates, targetMask } = mesh;
+    let hasTarget = false;
+
+    for (let i = 0; i < targetMask.length; i++) {
+      let intensity = 0;
+
+      if (region) {
+        const x = coordinates[i * 4];
+        const y = coordinates[i * 4 + 1];
+        const nx = coordinates[i * 4 + 2];
+        const nz = coordinates[i * 4 + 3];
+
+        const xDistance = region.both ? Math.abs(x) - region.x : x - region.x;
+        const dx = xDistance / region.rx;
+        const dy = (y - region.y) / region.ry;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const shapeMask = 1 - THREE.MathUtils.smoothstep(distance, .58, 1.02);
+        intensity = shapeMask * getSurfaceMask(nx, nz, region.surface);
+      }
+
+      targetMask[i] = intensity;
+      if (intensity > .0001) hasTarget = true;
+    }
+    mesh.active = hasTarget;
+  }
+
+  document.querySelectorAll(".part").forEach(button => {
+    button.classList.toggle("active", button.dataset.region === regionId);
+  });
+
+  if (region) {
+    setBodyView(region.view, true);
+    openPresetPanel(regionId);
+  } else {
+    closePresetPanel();
+  }
+}
+
+// Animate selected region highlight
+function animateHighlights(dt) {
+  if (!modelReady) return;
+
+  const smooth = reducedMotion.matches
+    ? 1 : 1 - Math.exp(-HIGHLIGHT_ANIMATION.fadeSpeed * dt);
+
+  highlightTime += dt;
+  const pulse = activeRegionId && !reducedMotion.matches
+    ? 1 - HIGHLIGHT_ANIMATION.pulseStrength / 2 +
+      Math.sin(highlightTime * HIGHLIGHT_ANIMATION.pulseSpeed) *
+      HIGHLIGHT_ANIMATION.pulseStrength / 2
+    : 1;
+
+  for (const mesh of meshData) {
+    const { geometry, colors, currentMask, targetMask } = mesh;
+    let changed = false;
+
+    for (let i = 0; i < currentMask.length; i++) {
+      const old = currentMask[i];
+      const target = targetMask[i];
+      const next = old + (target - old) * smooth;
+      currentMask[i] = next;
+
+      if (Math.abs(next - old) > .00001 || mesh.active) {
+        changed = true;
+      }
+
+      const intensity = THREE.MathUtils.clamp(next * pulse * .98, 0, 1);
+      colors[i * 3] = SKIN_COLOR.r + (HIGHLIGHT_COLOR.r - SKIN_COLOR.r) * intensity;
+      colors[i * 3 + 1] = SKIN_COLOR.g + (HIGHLIGHT_COLOR.g - SKIN_COLOR.g) * intensity;
+      colors[i * 3 + 2] = SKIN_COLOR.b + (HIGHLIGHT_COLOR.b - SKIN_COLOR.b) * intensity;
+    }
+
+    if (changed) geometry.attributes.color.needsUpdate = true;
+  }
+}
+
+// Body parts buttons
+const bodyPartsContainer = document.getElementById("bodyParts");
+
+Object.entries(REGIONS).forEach(([id, region]) => {
+  const button = document.createElement("button");
+  button.className = "part";
+  button.dataset.region = id;
+  button.textContent = region.name;
+  button.type = "button";
+  button.addEventListener("click", () => highlightBodyPart(id));
+  bodyPartsContainer.appendChild(button);
+});
+
+document.getElementById("clear").addEventListener("click", () => {
+  highlightBodyPart(null);
+  setMobileMenu(false);
+});
+
+// Responsive renderer
+function resize() {
+  const width = viewer.clientWidth;
+  const height = viewer.clientHeight;
+  if (!width || !height) return;
+
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+
+  if (modelReady) updateCamera();
+}
+
+new ResizeObserver(resize).observe(viewer);
+resize();
+
+// Clinic animation
+function animateClinic(dt) {
+  if (!CLINIC_ANIMATION.enabled || reducedMotion.matches) {
+    clinicGroup.rotation.y = 0;
+    clinicGroup.position.x = 0;
+    return;
+  }
+
+  if (!(isDragging && CLINIC_ANIMATION.pauseWhileDragging)) {
+    clinicTime += dt;
+  }
+
+  const rotation = Math.sin(clinicTime * CLINIC_ANIMATION.rotationSpeed) *
+    THREE.MathUtils.degToRad(CLINIC_ANIMATION.rotationAmount);
+
+  const interactive = mouseX *
+    THREE.MathUtils.degToRad(CLINIC_ANIMATION.mouseRotation);
+
+  const targetRotation = rotation + interactive;
+  const targetX = -Math.sin(clinicTime * CLINIC_ANIMATION.rotationSpeed) *
+    bodyHeight * CLINIC_ANIMATION.horizontalMovement;
+
+  const smoothing = 1 - Math.pow(1 - CLINIC_ANIMATION.smoothness, dt * 60);
+  clinicRotation = THREE.MathUtils.lerp(clinicRotation, targetRotation, smoothing);
+  clinicOffset = THREE.MathUtils.lerp(clinicOffset, targetX, smoothing);
+
+  clinicGroup.rotation.y = clinicRotation;
+  clinicGroup.position.x = clinicOffset;
+}
+
+// Move human to the space between the panels
+function getHumanTargetX() {
+  if (!modelReady || mobileQuery.matches || !presetPanel.classList.contains("open")) {
+    return 0;
+  }
+
+  const viewerRect = viewer.getBoundingClientRect();
+  const leftRect = bodyPanel.getBoundingClientRect();
+
+  const rightPanelLeft = viewerRect.right -
+    parseFloat(getComputedStyle(presetPanel).right || "24") -
+    presetPanel.offsetWidth;
+
+  const availableCenter = (leftRect.right + rightPanelLeft) / 2;
+  const screenCenter = viewerRect.left + viewerRect.width / 2;
+  const pixelShift = availableCenter - screenCenter;
+  const cameraDistance = Math.abs(camera.position.z - bodyRoot.position.z);
+
+  const visibleWorldWidth = 2 * cameraDistance *
+    Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) *
+    camera.aspect;
+
+  return pixelShift * visibleWorldWidth / viewerRect.width;
+}
+
+// Main rendering loop
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), .05);
+  const bodySmooth = 1 - Math.pow(.88, dt * 60);
+  const slideSmooth = reducedMotion.matches ? 1 : 1 - Math.exp(-5 * dt);
+
+  bodyRoot.position.x = THREE.MathUtils.lerp(
+    bodyRoot.position.x, getHumanTargetX(), slideSmooth
+  );
+  shadowGroup.position.x = bodyRoot.position.x;
+
+  bodyRoot.rotation.y = THREE.MathUtils.lerp(
+    bodyRoot.rotation.y, targetBodyRotationY, bodySmooth
+  );
+
+  animateClinic(dt);
+  updateRugFollowing();
+  animateHighlights(dt);
+
+  renderer.clear();
+  renderer.render(clinicScene, camera);
+  renderer.clearDepth();
+  renderer.render(bodyScene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
