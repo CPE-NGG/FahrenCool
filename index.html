@@ -1837,19 +1837,22 @@ function animateHighlights(dt) {
   }
 }
 
-// Body parts buttons
+// Body parts buttons - sorted from top to bottom
 const bodyPartsContainer = document.getElementById("bodyParts");
 
-Object.entries(REGIONS).forEach(([id, region]) => {
-  const button = document.createElement("button");
-  button.className = "part";
-  button.dataset.region = id;
-  button.textContent = region.name;
-  button.type = "button";
-  button.addEventListener("click", () => highlightBodyPart(id));
-  bodyPartsContainer.appendChild(button);
-});
+Object.entries(REGIONS)
+  .sort((a, b) => b[1].y - a[1].y)
+  .forEach(([id, region]) => {
+    const button = document.createElement("button");
+    button.className = "part";
+    button.dataset.region = id;
+    button.textContent = region.name;
+    button.type = "button";
+    button.addEventListener("click", () => highlightBodyPart(id));
+    bodyPartsContainer.appendChild(button);
+  });
 
+// Clear Selection button
 document.getElementById("clear").addEventListener("click", () => {
   highlightBodyPart(null);
   setMobileMenu(false);
