@@ -834,7 +834,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { REGIONS } from "./data/bodyRegions.js";
 import { THERAPY_PRESETS } from "./data/therapyPresets.js";
 import { BODY_FACTS } from "./data/bodyFacts.js";
-import { THERAPY_GUIDANCE } from "./data/therapyGuidance.js";
+import { getConditionGuidance } from "./data/bodyTherapyGuidance.js";
 
 // Model configuration
 import {
@@ -1181,7 +1181,7 @@ function createPresetCard(preset) {
   }
 
   // Why this therapy?
-  const guidance = THERAPY_GUIDANCE[preset.mode] || THERAPY_GUIDANCE.COOL;
+  const guidance = getConditionGuidance(preset);
   const why = document.createElement("section");
   why.className = "preset-why";
 
@@ -1207,13 +1207,6 @@ function createPresetCard(preset) {
   const safetyText = document.createElement("p");
   safetyText.textContent = guidance.safety;
   safetyContent.appendChild(safetyText);
-
-  if (normalizeBodyPart(preset.bodyPart) === "neck") {
-    const neckText = document.createElement("p");
-    neckText.textContent =
-      "For neck applications, avoid the front and sides of the neck; seek guidance from a qualified clinician.";
-    safetyContent.appendChild(neckText);
-  }
 
   safety.append(safetyHeading, safetyContent);
   card.appendChild(safety);
