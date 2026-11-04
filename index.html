@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FahrenCool | Interactive Therapy Clinic</title>
+<title>FahrenCool | Your Therapy Companion</title>
 
 <style>
 :root {
@@ -42,6 +42,7 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
 
 #loading.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 #loading.failed .fc-loader-message { color: #a54b38; }
+#loading.failed .fc-loading-dots { display: none; }
 
 .fc-loader {
   width: min(680px, 96vw);
@@ -108,6 +109,8 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
   color: #5f7e80;
   font-size: 16px;
   line-height: 1.6;
+  max-width: 560px;
+  padding: 0 12px;
 }
 
 .fc-loading-dots {
@@ -128,36 +131,15 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
 .fc-loading-dots span:nth-child(3) { animation-delay: .4s; }
 
 @media (max-width: 767px) {
-  .fc-loader {
-    width: min(440px, 98vw);
-  }
-
-  .fc-pad {
-    max-width: 430px;
-  }
-
-  .fc-loader-brand {
-    font-size: 34px;
-  }
-
-  .fc-loader-message {
-    font-size: 13px;
-  }
+  .fc-loader { width: min(440px, 98vw); }
+  .fc-pad { max-width: 430px; }
+  .fc-loader-brand { font-size: 34px; }
+  .fc-loader-message { font-size: 13px; }
 }
 
-@keyframes fcFloat {
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes fcDot {
-  0%, 80%, 100% { opacity: .3; transform: scale(.75); }
-  40% { opacity: 1; transform: scale(1.2); }
-}
-
-@keyframes fcAppear {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes fcFloat { 50% { transform: translateY(-6px); } }
+@keyframes fcDot { 0%, 80%, 100% { opacity: .3; transform: scale(.75); } 40% { opacity: 1; transform: scale(1.2); } }
+@keyframes fcAppear { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Main interface */
 .ui-layer {
@@ -282,7 +264,8 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
   transform: translateX(3px);
 }
 
-.part.active {
+.part.active,
+.part[aria-pressed="true"] {
   background: #adf0e5;
   border-color: #0da79c;
   color: #006c66;
@@ -362,6 +345,8 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
   font-size: 23px;
   font-weight: 900;
 }
+
+#presetBodyTitle:focus { outline: none; }
 
 .preset-close {
   width: 34px;
@@ -577,6 +562,8 @@ body { font-family: Arial, sans-serif; color: var(--ink); background: #dfeae8; }
   line-height: 1.5;
 }
 
+.preset-footer p + p { margin-top: 6px; }
+
 /* Why this therapy? */
 .preset-why {
   margin-top: 12px;
@@ -707,7 +694,8 @@ summary:focus-visible {
 
 <body>
 <main class="clinic-stage">
-  <div id="viewer"></div>
+  <div id="viewer" role="img"
+       aria-label="Interactive 3D human body. Click a region to select it, drag to rotate. Keyboard users can pick regions from the Body Parts list."></div>
 
   <!-- Loading screen -->
   <div id="loading" role="status" aria-live="polite">
@@ -796,7 +784,7 @@ summary:focus-visible {
         <div class="preset-heading-row">
           <div>
             <span class="preset-eyebrow">FAHRENCOOL THERAPY REFERENCE</span>
-            <h2 id="presetBodyTitle">Body Part</h2>
+            <h2 id="presetBodyTitle" tabindex="-1">Body Part</h2>
           </div>
           <button id="closePresetPanel" class="preset-close"
                   type="button" aria-label="Close preset panel">&times;</button>
@@ -810,7 +798,7 @@ summary:focus-visible {
       </div>
 
       <div class="preset-scroll">
-        <div id="presetCount" class="preset-count"></div>
+        <div id="presetCount" class="preset-count" aria-live="polite"></div>
         <div class="condition-guide" aria-label="Condition definitions">
           <p><strong>Acute:</strong> First 48–72 hours after an injury.</p>
           <p><strong>Chronic:</strong> Ongoing stiffness or pain beyond that.</p>
@@ -827,6 +815,16 @@ summary:focus-visible {
     </aside>
   </div>
 </main>
+
+<!-- Classic script: runs even when the module below cannot load (e.g. file://) -->
+<script>
+if (location.protocol === "file:") {
+  document.getElementById("fcLoadMessage").textContent =
+    "This page uses ES modules and 3D model files, so it must be opened through a local web server " +
+    "(for example: npx serve  or  python -m http.server), not by double-clicking the file.";
+  document.getElementById("loading").classList.add("failed");
+}
+</script>
 
 <script type="module">
 import * as THREE from "three";
@@ -865,17 +863,25 @@ const HIGHLIGHT_COLOR = new THREE.Color(HIGHLIGHT_HEX);
 const reducedMotion = matchMedia("(prefers-reduced-motion:reduce)");
 const mobileQuery = matchMedia("(max-width:767px)");
 
+// Tuning constants
+const MOBILE_MIN_FRAME_MS = 28;      // ~30 fps cap on small screens
+const ROTATION_SETTLE = 1e-4;        // radians
+const SHADOW_ROTATION_STEP = .0015;  // radians of clinic movement before shadows refresh
+const SHADOW_OFFSET_STEP = .002;     // fraction of body height
+
 // DOM elements
 const viewer = document.getElementById("viewer");
 const loading = document.getElementById("loading");
 const loadMessage = document.getElementById("fcLoadMessage");
 const bodyPanel = document.getElementById("bodyPanel");
+const bodyPartsContainer = document.getElementById("bodyParts");
 const menuToggle = document.getElementById("menuToggle");
 const presetPanel = document.getElementById("presetPanel");
 const presetTitle = document.getElementById("presetBodyTitle");
 const presetFact = document.getElementById("presetBodyFact");
 const presetCount = document.getElementById("presetCount");
 const presetList = document.getElementById("presetList");
+const presetScroll = presetPanel.querySelector(".preset-scroll");
 
 // Three.js setup
 const clinicScene = new THREE.Scene();
@@ -888,13 +894,14 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance"
 });
 
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 renderer.autoClear = false;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Shadows are refreshed manually, only when the clinic has moved enough to matter.
+renderer.shadowMap.autoUpdate = false;
 viewer.appendChild(renderer.domElement);
 
 const loader = new GLTFLoader();
@@ -911,8 +918,6 @@ bodyScene.add(shadowGroup);
 const meshData = [];
 let bodyHeight = 1.7;
 let modelReady = false;
-let loadedModels = 0;
-let failedModels = false;
 let targetBodyRotationY = 0;
 let activeRegionId = null;
 let isDragging = false;
@@ -926,32 +931,52 @@ let clinicTime = 0;
 let clinicRotation = 0;
 let clinicOffset = 0;
 let highlightTime = 0;
+let humanTargetX = 0;
+let shadowTexture = null;
+
+// Render-loop state
+let rafId = 0;
+let lastFrameTime = 0;
+let dirty = true;          // something changed that needs a redraw
+let shadowDirty = true;    // shadow map needs refreshing
+let shadowRotation = NaN;
+let shadowOffset = NaN;
+let disposed = false;
+
+const markDirty = () => { dirty = true; };
 
 // Automatic rug state
 let rugObject = null;
 let rugAnchorLocal = null;
 const rugCenterWorld = new THREE.Vector3();
+const rugTargetWorld = new THREE.Vector3();
 const humanFeetWorld = new THREE.Vector3();
-const rugDeltaWorld = new THREE.Vector3();
-const rugDeltaLocal = new THREE.Vector3();
-const rugInverseParent = new THREE.Matrix4();
 
-// Model loading
-function finishModelLoading() {
-  loadedModels++;
-  if (loadedModels === 2 && !failedModels) {
-    loading.classList.add("hidden");
+// Loading
+
+const loadProgress = { human: 0, clinic: 0 };
+let progressKnown = false;
+
+function reportProgress(key, event) {
+  if (event.lengthComputable && event.total > 0) {
+    progressKnown = true;
+    loadProgress[key] = event.loaded / event.total;
+  }
+  if (progressKnown) {
+    const pct = Math.round(((loadProgress.human + loadProgress.clinic) / 2) * 100);
+    loadMessage.textContent = `Loading 3D models… ${pct}%`;
   }
 }
 
 function failModelLoading(name, error) {
-  failedModels = true;
   console.error(name, error);
+  loading.classList.remove("hidden");
   loading.classList.add("failed");
-  loadMessage.textContent = `Could not load ${name}. Check the model files and local server.`;
+  loadMessage.textContent = `Could not load ${name}. Check the model files and make sure the page is served from a local web server.`;
 }
 
 // Lighting
+
 function addLights(scene, clinic = false) {
   scene.add(new THREE.HemisphereLight(
     0xf4ffff, 0x899d9b, clinic ? 1.45 : 2.05
@@ -996,10 +1021,16 @@ function addLights(scene, clinic = false) {
 const clinicKeyLight = addLights(clinicScene, true);
 addLights(bodyScene, false);
 
-// Panel controls
+// Panel controls (with focus management)
+
 function setMobileMenu(open) {
   bodyPanel.classList.toggle("open", open);
   menuToggle.setAttribute("aria-expanded", String(open));
+
+  // Don't leave focus stranded inside a hidden panel
+  if (!open && mobileQuery.matches && bodyPanel.contains(document.activeElement)) {
+    menuToggle.focus({ preventScroll: true });
+  }
 }
 
 menuToggle.addEventListener("click", () => {
@@ -1007,21 +1038,37 @@ menuToggle.addEventListener("click", () => {
 });
 
 function closePresetPanel() {
+  const hadFocus = presetPanel.contains(document.activeElement);
+
   presetPanel.classList.remove("open");
   presetPanel.setAttribute("aria-hidden", "true");
   presetPanel.inert = true;
+  updateHumanTargetX();
+  markDirty();
+
+  // Return focus to where the user came from
+  if (hadFocus) {
+    const target = mobileQuery.matches
+      ? menuToggle
+      : document.querySelector(".part.active") || menuToggle;
+    target.focus({ preventScroll: true });
+  }
 }
 
 document.getElementById("closePresetPanel").addEventListener("click", closePresetPanel);
 
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
+  if (event.key !== "Escape") return;
+
+  if (presetPanel.classList.contains("open")) {
     closePresetPanel();
+  } else if (bodyPanel.classList.contains("open")) {
     setMobileMenu(false);
   }
 });
 
-// Normalize body part names
+// Body part names and preset lookup
+
 function normalizeBodyPart(value) {
   const text = String(value || "")
     .toLowerCase()
@@ -1043,17 +1090,30 @@ function normalizeBodyPart(value) {
   return text;
 }
 
-function getMatchingPresets(regionId, region) {
-  const name = normalizeBodyPart(region.name || regionId);
-  const id = normalizeBodyPart(regionId);
-
-  return THERAPY_PRESETS.filter(preset =>
-    normalizeBodyPart(preset.bodyPart) === name ||
-    normalizeBodyPart(preset.bodyPart) === id
-  );
+// Index presets once at startup instead of filtering on every open
+const PRESETS_BY_PART = new Map();
+for (const preset of THERAPY_PRESETS) {
+  const key = normalizeBodyPart(preset.bodyPart);
+  if (!PRESETS_BY_PART.has(key)) PRESETS_BY_PART.set(key, []);
+  PRESETS_BY_PART.get(key).push(preset);
 }
 
-// Create therapy preset cards
+function getMatchingPresets(regionId, region) {
+  const keys = new Set([
+    normalizeBodyPart(region.name || regionId),
+    normalizeBodyPart(regionId)
+  ]);
+
+  const matches = [];
+  for (const key of keys) {
+    const list = PRESETS_BY_PART.get(key);
+    if (list) matches.push(...list);
+  }
+  return matches;
+}
+
+// Therapy preset cards
+
 function createPresetCard(preset) {
   const type = preset.mode.toLowerCase();
   const card = document.createElement("article");
@@ -1160,7 +1220,6 @@ function createPresetCard(preset) {
   return card;
 }
 
-// Open selected therapy reference
 function openPresetPanel(regionId) {
   const region = REGIONS[regionId];
   if (!region) return;
@@ -1188,19 +1247,25 @@ function openPresetPanel(regionId) {
     presetList.appendChild(empty);
   }
 
-  presetPanel.querySelector(".preset-scroll").scrollTop = 0;
+  presetScroll.scrollTop = 0;
   presetPanel.inert = false;
   presetPanel.setAttribute("aria-hidden", "false");
   presetPanel.classList.add("open");
+  updateHumanTargetX();
+  markDirty();
 
   if (mobileQuery.matches) setMobileMenu(false);
+
+  // Move focus into the panel so keyboard and screen-reader users land on the result
+  requestAnimationFrame(() => presetTitle.focus({ preventScroll: true }));
 }
 
-// Automatically center the rug beneath the human
+// Rug follows the human
+
 function updateRugFollowing() {
   if (!rugObject || !rugAnchorLocal || !modelReady) return;
 
-  clinicGroup.updateWorldMatrix(true, true);
+  rugObject.updateWorldMatrix(true, false);
   bodyRoot.updateWorldMatrix(true, false);
 
   humanFeetWorld.set(0, 0, 0);
@@ -1209,33 +1274,22 @@ function updateRugFollowing() {
   rugCenterWorld.copy(rugAnchorLocal);
   rugObject.localToWorld(rugCenterWorld);
 
-  rugDeltaWorld.set(
-    humanFeetWorld.x - rugCenterWorld.x,
-    0,
-    humanFeetWorld.z - rugCenterWorld.z
-  );
+  // Desired rug centre in world space (same height, under the feet)
+  rugTargetWorld.set(humanFeetWorld.x, rugCenterWorld.y, humanFeetWorld.z);
 
-  if (rugObject.parent) {
-    rugObject.parent.updateWorldMatrix(true, false);
-    rugInverseParent.copy(rugObject.parent.matrixWorld).invert();
-
-    const e = rugInverseParent.elements;
-    const { x, y, z } = rugDeltaWorld;
-
-    rugDeltaLocal.set(
-      e[0] * x + e[4] * y + e[8] * z,
-      e[1] * x + e[5] * y + e[9] * z,
-      e[2] * x + e[6] * y + e[10] * z
-    );
-  } else {
-    rugDeltaLocal.copy(rugDeltaWorld);
+  const parent = rugObject.parent;
+  if (parent) {
+    parent.updateWorldMatrix(true, false);
+    parent.worldToLocal(rugTargetWorld);
+    parent.worldToLocal(rugCenterWorld);
   }
 
-  rugObject.position.add(rugDeltaLocal);
+  rugObject.position.add(rugTargetWorld.sub(rugCenterWorld));
   rugObject.updateWorldMatrix(false, true);
 }
 
-// Contact shadow texture
+// Contact shadow
+
 function createShadowTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
@@ -1259,13 +1313,13 @@ function createShadowTexture() {
 }
 
 function setupHumanShadow(H) {
-  const texture = createShadowTexture();
+  shadowTexture = createShadowTexture();
 
   function addShadow(width, depth, opacity, y) {
     const mesh = new THREE.Mesh(
       new THREE.PlaneGeometry(width, depth),
       new THREE.MeshBasicMaterial({
-        map: texture,
+        map: shadowTexture,
         transparent: true,
         opacity,
         depthWrite: false,
@@ -1295,6 +1349,7 @@ function setupHumanShadow(H) {
 }
 
 // Clinic environment
+
 function clinicMaterial(color, roughness = .9) {
   return new THREE.MeshStandardMaterial({
     color,
@@ -1385,68 +1440,185 @@ function configureClinicShadowCamera(H) {
   clinicScene.add(clinicKeyLight.target);
 }
 
-// Load the clinic model
-function loadClinicModel(H) {
-  loader.load(CLINIC_MODEL_URL, gltf => {
-    const clinicModel = gltf.scene;
-    clinicGroup.add(clinicModel);
-    clinicModel.updateMatrixWorld(true);
+function setupClinicModel(gltf, H) {
+  const clinicModel = gltf.scene;
+  clinicGroup.add(clinicModel);
+  clinicModel.updateMatrixWorld(true);
 
-    const bounds = new THREE.Box3().setFromObject(clinicModel);
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
+  const bounds = new THREE.Box3().setFromObject(clinicModel);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
 
-    const scale = Math.min(
-      H * 2.45 / Math.max(size.y, .001),
-      H * 3.9 / Math.max(size.x, .001),
-      H * 2.8 / Math.max(size.z, .001)
-    );
+  const scale = Math.min(
+    H * 2.45 / Math.max(size.y, .001),
+    H * 3.9 / Math.max(size.x, .001),
+    H * 2.8 / Math.max(size.z, .001)
+  );
 
-    clinicModel.scale.setScalar(scale);
-    clinicModel.position.set(
-      -center.x * scale,
-      -bounds.min.y * scale,
-      -center.z * scale - H * .78
-    );
-    clinicModel.updateMatrixWorld(true);
+  clinicModel.scale.setScalar(scale);
+  clinicModel.position.set(
+    -center.x * scale,
+    -bounds.min.y * scale,
+    -center.z * scale - H * .78
+  );
+  clinicModel.updateMatrixWorld(true);
 
-    rugObject = clinicModel.getObjectByName(RUG_NAME);
+  rugObject = clinicModel.getObjectByName(RUG_NAME);
 
-    if (rugObject) {
-      const rugBounds = new THREE.Box3().setFromObject(rugObject);
-      const centerWorld = rugBounds.getCenter(new THREE.Vector3());
+  if (rugObject) {
+    const rugBounds = new THREE.Box3().setFromObject(rugObject);
+    const centerWorld = rugBounds.getCenter(new THREE.Vector3());
 
-      rugAnchorLocal = rugObject.worldToLocal(centerWorld.clone());
-      updateRugFollowing();
-    } else {
-      console.warn("[FahrenCool] Rug not found:", RUG_NAME);
+    rugAnchorLocal = rugObject.worldToLocal(centerWorld.clone());
+    updateRugFollowing();
+  } else {
+    console.warn("[FahrenCool] Rug not found:", RUG_NAME);
+  }
+
+  clinicModel.traverse(object => {
+    if (!object.isMesh) return;
+
+    object.receiveShadow = true;
+    let hierarchy = "";
+    let node = object;
+
+    while (node && node !== clinicModel) {
+      hierarchy += " " + (node.name || "").toLowerCase();
+      node = node.parent;
     }
 
-    clinicModel.traverse(object => {
-      if (!object.isMesh) return;
-
-      object.receiveShadow = true;
-      let hierarchy = "";
-      let node = object;
-
-      while (node && node !== clinicModel) {
-        hierarchy += " " + (node.name || "").toLowerCase();
-        node = node.parent;
-      }
-
-      const furniture = /desk|stool|chair|couch|bed|trolley|cabinet/.test(hierarchy);
-      const excluded = /floor-mat|rug|carpet|curtain|wall|ceiling|glass/.test(hierarchy);
-      object.castShadow = furniture && !excluded;
-    });
-
-    finishModelLoading();
-  }, undefined, error => {
-    failModelLoading("clinic model.glb", error);
+    const furniture = /desk|stool|chair|couch|bed|trolley|cabinet/.test(hierarchy);
+    const excluded = /floor-mat|rug|carpet|curtain|wall|ceiling|glass/.test(hierarchy);
+    object.castShadow = furniture && !excluded;
   });
+
+  shadowDirty = true;
+  markDirty();
 }
 
-// Load the human model
-loader.load(HUMAN_MODEL_URL, gltf => {
+// Region helpers shared by picking and highlighting (the GLSL in the highlight shader mirrors these two functions)
+
+const SURFACE_CODES = { both: 0, front: 1, back: 2, frontSide: 3 };
+
+function regionDistance(region, x, y) {
+  const xDist = region.both ? Math.abs(x) - region.x : x - region.x;
+  return Math.hypot(xDist / region.rx, (y - region.y) / region.ry);
+}
+
+function getSurfaceMask(nx, nz, surface) {
+  if (surface === "both") return 1;
+  if (surface === "front") return THREE.MathUtils.smoothstep(nz, .10, .45);
+  if (surface === "back") return THREE.MathUtils.smoothstep(-nz, .10, .45);
+
+  if (surface === "frontSide") {
+    const front = THREE.MathUtils.smoothstep(nz, -.05, .35);
+    const side = THREE.MathUtils.smoothstep(Math.abs(nx), .20, .75);
+    const notBack = THREE.MathUtils.smoothstep(nz, -.20, .05);
+    return Math.max(front, side * notBack * .9);
+  }
+  return 0;
+}
+
+// GPU highlight: region masks are evaluated in the fragment shader
+
+// Two slots: the selected region (0) and the region fading out (1)
+const highlightUniforms = {
+  uHighlightColor: { value: HIGHLIGHT_COLOR },
+  uRegionShape: { value: [new THREE.Vector4(0, 0, 1, 1), new THREE.Vector4(0, 0, 1, 1)] }, // x, y, rx, ry
+  uRegionMode: { value: [new THREE.Vector2(0, -1), new THREE.Vector2(0, -1)] },            // both, surface code
+  uRegionStrength: { value: [0, 0] },
+  uPulse: { value: 1 }
+};
+
+const highlightSlots = [
+  { regionId: null, strength: 0, target: 0 },
+  { regionId: null, strength: 0, target: 0 }
+];
+
+function writeSlotUniforms(index, region) {
+  const shape = highlightUniforms.uRegionShape.value[index];
+  const mode = highlightUniforms.uRegionMode.value[index];
+
+  if (region) {
+    shape.set(region.x, region.y, region.rx, region.ry);
+    mode.set(region.both ? 1 : 0, SURFACE_CODES[region.surface] ?? -1);
+  } else {
+    shape.set(0, 0, 1, 1);
+    mode.set(0, -1);
+  }
+}
+
+function createBodyMaterial() {
+  const material = new THREE.MeshStandardMaterial({
+    color: SKIN_COLOR,
+    roughness: .86,
+    metalness: 0,
+    side: THREE.DoubleSide
+  });
+
+  material.onBeforeCompile = shader => {
+    Object.assign(shader.uniforms, highlightUniforms);
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>
+attribute vec4 bodyCoord;
+varying vec4 vBodyCoord;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+vBodyCoord = bodyCoord;`);
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", `#include <common>
+uniform vec3 uHighlightColor;
+uniform vec4 uRegionShape[2];
+uniform vec2 uRegionMode[2];
+uniform float uRegionStrength[2];
+uniform float uPulse;
+varying vec4 vBodyCoord;
+
+float fcSurfaceMask(float nx, float nz, float code) {
+  if (code < -0.5) return 0.0;
+  if (code < 0.5) return 1.0;
+  if (code < 1.5) return smoothstep(0.10, 0.45, nz);
+  if (code < 2.5) return smoothstep(0.10, 0.45, -nz);
+  float front = smoothstep(-0.05, 0.35, nz);
+  float side = smoothstep(0.20, 0.75, abs(nx));
+  float notBack = smoothstep(-0.20, 0.05, nz);
+  return max(front, side * notBack * 0.9);
+}
+
+float fcRegionIntensity(vec4 shape, vec2 mode, float strength) {
+  if (strength < 0.0005) return 0.0;
+  float xDist = mode.x > 0.5 ? abs(vBodyCoord.x) - shape.x : vBodyCoord.x - shape.x;
+  float dist = length(vec2(xDist / shape.z, (vBodyCoord.y - shape.y) / shape.w));
+  float shapeMask = 1.0 - smoothstep(0.58, 1.02, dist);
+  return shapeMask * fcSurfaceMask(vBodyCoord.z, vBodyCoord.w, mode.y) * strength;
+}`)
+      .replace("#include <color_fragment>", `#include <color_fragment>
+float fcHighlight = fcRegionIntensity(uRegionShape[0], uRegionMode[0], uRegionStrength[0])
+                  + fcRegionIntensity(uRegionShape[1], uRegionMode[1], uRegionStrength[1]);
+fcHighlight = clamp(fcHighlight * uPulse * 0.98, 0.0, 1.0);
+diffuseColor.rgb = mix(diffuseColor.rgb, uHighlightColor, fcHighlight);`);
+  };
+
+  // All body materials share one program
+  material.customProgramCacheKey = () => "fahrencool-body-highlight";
+  return material;
+}
+
+// Human model
+
+function disposeMaterial(material) {
+  const list = Array.isArray(material) ? material : [material];
+  for (const m of list) {
+    if (!m) continue;
+    for (const value of Object.values(m)) {
+      if (value && value.isTexture) value.dispose();
+    }
+    m.dispose();
+  }
+}
+
+function setupHuman(gltf) {
   const body = gltf.scene;
   bodyRoot.add(body);
   body.updateMatrixWorld(true);
@@ -1483,7 +1655,6 @@ loader.load(HUMAN_MODEL_URL, gltf => {
 
     const normals = geometry.getAttribute("normal");
     const count = positions.count;
-    const colors = new Float32Array(count * 3);
     const coordinates = new Float32Array(count * 4);
 
     object.updateWorldMatrix(true, false);
@@ -1501,31 +1672,15 @@ loader.load(HUMAN_MODEL_URL, gltf => {
       coordinates[i * 4 + 1] = (point.y - bounds.min.y) / bodyHeight;
       coordinates[i * 4 + 2] = normal.x;
       coordinates[i * 4 + 3] = normal.z * FRONT_DIRECTION;
-
-      colors[i * 3] = SKIN_COLOR.r;
-      colors[i * 3 + 1] = SKIN_COLOR.g;
-      colors[i * 3 + 2] = SKIN_COLOR.b;
     }
 
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    geometry.attributes.color.setUsage(THREE.DynamicDrawUsage);
+    // Static attribute: read by the highlight shader and by click picking
+    geometry.setAttribute("bodyCoord", new THREE.BufferAttribute(coordinates, 4));
 
-    object.material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      vertexColors: true,
-      roughness: .86,
-      metalness: 0,
-      side: THREE.DoubleSide
-    });
+    disposeMaterial(object.material);
+    object.material = createBodyMaterial();
 
-    meshData.push({
-      geometry,
-      coordinates,
-      colors,
-      currentMask: new Float32Array(count),
-      targetMask: new Float32Array(count),
-      active: false
-    });
+    meshData.push({ geometry, coordinates });
   });
 
   buildClinicShell(bodyHeight);
@@ -1535,13 +1690,42 @@ loader.load(HUMAN_MODEL_URL, gltf => {
   modelReady = true;
   resize();
   setBodyView("front", false);
-  loadClinicModel(bodyHeight);
-  finishModelLoading();
-}, undefined, error => {
-  failModelLoading("human scene.gltf", error);
-});
+}
 
-// Camera framing
+async function initScene() {
+  loadMessage.textContent = "Loading 3D models…";
+
+  const humanPromise = loader.loadAsync(HUMAN_MODEL_URL, e => reportProgress("human", e));
+
+  // The clinic model is optional: if it fails, the procedural clinic shell is used.
+  const clinicPromise = loader
+    .loadAsync(CLINIC_MODEL_URL, e => reportProgress("clinic", e))
+    .catch(error => {
+      console.warn("[FahrenCool] Clinic model failed to load; using the built-in room.", error);
+      return null;
+    });
+
+  let humanGltf;
+  try {
+    humanGltf = await humanPromise;
+  } catch (error) {
+    failModelLoading("human scene.gltf", error);
+    return;
+  }
+
+  try {
+    setupHuman(humanGltf);
+    const clinicGltf = await clinicPromise;
+    if (clinicGltf) setupClinicModel(clinicGltf, bodyHeight);
+    markDirty();
+    loading.classList.add("hidden");
+  } catch (error) {
+    failModelLoading("the 3D scene", error);
+  }
+}
+
+// Camera
+
 function updateCamera() {
   if (!modelReady) return;
 
@@ -1576,7 +1760,6 @@ function updateCamera() {
   camera.updateProjectionMatrix();
 }
 
-// Human orientation
 function setBodyView(side, animate = true) {
   const destination = side === "back" ? Math.PI : 0;
   const current = bodyRoot.rotation.y;
@@ -1587,9 +1770,11 @@ function setBodyView(side, animate = true) {
 
   targetBodyRotationY = current + difference;
   if (!animate) bodyRoot.rotation.y = targetBodyRotationY;
+  markDirty();
 }
 
-// Click-to-select and drag-to-rotate controls
+// Pointer controls
+
 viewer.addEventListener("pointerdown", event => {
   if (!modelReady || isDragging) return;
 
@@ -1605,9 +1790,9 @@ viewer.addEventListener("pointerdown", event => {
 });
 
 viewer.addEventListener("pointermove", event => {
-  const rect = viewer.getBoundingClientRect();
+  // The viewer fills the window, so no layout read is needed here
   mouseX = THREE.MathUtils.clamp(
-    ((event.clientX - rect.left) / rect.width) * 2 - 1, -1, 1
+    (event.clientX / Math.max(viewer.clientWidth, 1)) * 2 - 1, -1, 1
   );
 
   if (!isDragging || event.pointerId !== activePointer) return;
@@ -1657,22 +1842,8 @@ viewer.addEventListener("pointerleave", () => {
   if (!isDragging) mouseX = 0;
 });
 
-// Region surface detection
-function getSurfaceMask(nx, nz, surface) {
-  if (surface === "both") return 1;
-  if (surface === "front") return THREE.MathUtils.smoothstep(nz, .10, .45);
-  if (surface === "back") return THREE.MathUtils.smoothstep(-nz, .10, .45);
+// Click picking
 
-  if (surface === "frontSide") {
-    const front = THREE.MathUtils.smoothstep(nz, -.05, .35);
-    const side = THREE.MathUtils.smoothstep(Math.abs(nx), .20, .75);
-    const notBack = THREE.MathUtils.smoothstep(nz, -.20, .05);
-    return Math.max(front, side * notBack * .9);
-  }
-  return 0;
-}
-
-// Clickable 3D anatomical regions
 const bodyRaycaster = new THREE.Raycaster();
 const bodyClickNDC = new THREE.Vector2();
 const barycentric = new THREE.Vector3();
@@ -1728,10 +1899,7 @@ function selectRegionFromBodyClick(event) {
   let highestScore = 0;
 
   for (const [id, region] of Object.entries(REGIONS)) {
-    const xDist = region.both ? Math.abs(x) - region.x : x - region.x;
-    const dx = xDist / region.rx;
-    const dy = (y - region.y) / region.ry;
-    const distance = Math.hypot(dx, dy);
+    const distance = regionDistance(region, x, y);
     if (distance > 1.05) continue;
 
     const surface = getSurfaceMask(nx, nz, region.surface);
@@ -1746,44 +1914,39 @@ function selectRegionFromBodyClick(event) {
   if (selectedId) highlightBodyPart(selectedId);
 }
 
-// Highlight selected body part
+// Highlight selection and animation
+
 function highlightBodyPart(regionId) {
   if (!modelReady) return;
 
   const region = regionId ? REGIONS[regionId] : null;
-  activeRegionId = regionId;
   highlightTime = 0;
 
-  for (const mesh of meshData) {
-    const { coordinates, targetMask } = mesh;
-    let hasTarget = false;
-
-    for (let i = 0; i < targetMask.length; i++) {
-      let intensity = 0;
-
-      if (region) {
-        const x = coordinates[i * 4];
-        const y = coordinates[i * 4 + 1];
-        const nx = coordinates[i * 4 + 2];
-        const nz = coordinates[i * 4 + 3];
-
-        const xDistance = region.both ? Math.abs(x) - region.x : x - region.x;
-        const dx = xDistance / region.rx;
-        const dy = (y - region.y) / region.ry;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        const shapeMask = 1 - THREE.MathUtils.smoothstep(distance, .58, 1.02);
-        intensity = shapeMask * getSurfaceMask(nx, nz, region.surface);
-      }
-
-      targetMask[i] = intensity;
-      if (intensity > .0001) hasTarget = true;
+  const current = highlightSlots[0];
+  if (current.regionId !== regionId) {
+    // Fade the previous region out in slot 1 (only if it was actually visible)
+    if (current.strength > .01) {
+      const outgoing = highlightSlots[1];
+      outgoing.regionId = current.regionId;
+      outgoing.strength = current.strength;
+      outgoing.target = 0;
+      highlightUniforms.uRegionShape.value[1].copy(highlightUniforms.uRegionShape.value[0]);
+      highlightUniforms.uRegionMode.value[1].copy(highlightUniforms.uRegionMode.value[0]);
     }
-    mesh.active = hasTarget;
+
+    current.regionId = regionId;
+    current.strength = 0;
+    current.target = region ? 1 : 0;
+    writeSlotUniforms(0, region);
   }
 
+  activeRegionId = regionId;
+  markDirty();
+
   document.querySelectorAll(".part").forEach(button => {
-    button.classList.toggle("active", button.dataset.region === regionId);
+    const isActive = button.dataset.region === regionId;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
   });
 
   if (region) {
@@ -1794,46 +1957,40 @@ function highlightBodyPart(regionId) {
   }
 }
 
-// Animate selected region highlight
+// Returns true while the highlight is still changing or pulsing
 function animateHighlights(dt) {
-  if (!modelReady) return;
+  if (!modelReady) return false;
 
   const smooth = reducedMotion.matches
     ? 1 : 1 - Math.exp(-HIGHLIGHT_ANIMATION.fadeSpeed * dt);
 
+  let animating = false;
+
+  highlightSlots.forEach((slot, index) => {
+    const diff = slot.target - slot.strength;
+    if (Math.abs(diff) > .001) {
+      slot.strength += diff * smooth;
+      animating = true;
+    } else {
+      slot.strength = slot.target;
+      if (slot.target === 0 && index === 1) slot.regionId = null;
+    }
+    highlightUniforms.uRegionStrength.value[index] = slot.strength;
+  });
+
+  const pulsing = Boolean(activeRegionId) && !reducedMotion.matches;
   highlightTime += dt;
-  const pulse = activeRegionId && !reducedMotion.matches
+
+  highlightUniforms.uPulse.value = pulsing
     ? 1 - HIGHLIGHT_ANIMATION.pulseStrength / 2 +
       Math.sin(highlightTime * HIGHLIGHT_ANIMATION.pulseSpeed) *
       HIGHLIGHT_ANIMATION.pulseStrength / 2
     : 1;
 
-  for (const mesh of meshData) {
-    const { geometry, colors, currentMask, targetMask } = mesh;
-    let changed = false;
-
-    for (let i = 0; i < currentMask.length; i++) {
-      const old = currentMask[i];
-      const target = targetMask[i];
-      const next = old + (target - old) * smooth;
-      currentMask[i] = next;
-
-      if (Math.abs(next - old) > .00001 || mesh.active) {
-        changed = true;
-      }
-
-      const intensity = THREE.MathUtils.clamp(next * pulse * .98, 0, 1);
-      colors[i * 3] = SKIN_COLOR.r + (HIGHLIGHT_COLOR.r - SKIN_COLOR.r) * intensity;
-      colors[i * 3 + 1] = SKIN_COLOR.g + (HIGHLIGHT_COLOR.g - SKIN_COLOR.g) * intensity;
-      colors[i * 3 + 2] = SKIN_COLOR.b + (HIGHLIGHT_COLOR.b - SKIN_COLOR.b) * intensity;
-    }
-
-    if (changed) geometry.attributes.color.needsUpdate = true;
-  }
+  return animating || pulsing;
 }
 
-// Body parts buttons - sorted from top to bottom
-const bodyPartsContainer = document.getElementById("bodyParts");
+// Body parts list
 
 Object.entries(REGIONS)
   .sort((a, b) => b[1].y - a[1].y)
@@ -1843,38 +2000,53 @@ Object.entries(REGIONS)
     button.dataset.region = id;
     button.textContent = region.name;
     button.type = "button";
+    button.setAttribute("aria-pressed", "false");
     button.addEventListener("click", () => highlightBodyPart(id));
     bodyPartsContainer.appendChild(button);
   });
 
-// Clear Selection button
 document.getElementById("clear").addEventListener("click", () => {
   highlightBodyPart(null);
   setMobileMenu(false);
 });
 
-// Responsive renderer
+// Resize
+
 function resize() {
   const width = viewer.clientWidth;
   const height = viewer.clientHeight;
   if (!width || !height) return;
 
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobileQuery.matches ? 1.5 : 2));
   renderer.setSize(width, height, false);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 
-  if (modelReady) updateCamera();
+  if (modelReady) {
+    updateCamera();
+    updateHumanTargetX();
+  }
+  markDirty();
 }
 
-new ResizeObserver(resize).observe(viewer);
+const resizeObserver = new ResizeObserver(resize);
+resizeObserver.observe(viewer);
 resize();
 
+mobileQuery.addEventListener("change", () => { updateHumanTargetX(); markDirty(); });
+reducedMotion.addEventListener("change", markDirty);
+
 // Clinic animation
+
+// Returns true when the clinic is (or just stopped) moving
 function animateClinic(dt) {
   if (!CLINIC_ANIMATION.enabled || reducedMotion.matches) {
+    const changed = clinicGroup.rotation.y !== 0 || clinicGroup.position.x !== 0;
+    clinicRotation = 0;
+    clinicOffset = 0;
     clinicGroup.rotation.y = 0;
     clinicGroup.position.x = 0;
-    return;
+    return changed;
   }
 
   if (!(isDragging && CLINIC_ANIMATION.pauseWhileDragging)) {
@@ -1897,12 +2069,15 @@ function animateClinic(dt) {
 
   clinicGroup.rotation.y = clinicRotation;
   clinicGroup.position.x = clinicOffset;
+  return true;
 }
 
-// Move human to the space between the panels
-function getHumanTargetX() {
+// Human position between the panels (cached, not computed per frame)
+
+function updateHumanTargetX() {
   if (!modelReady || mobileQuery.matches || !presetPanel.classList.contains("open")) {
-    return 0;
+    humanTargetX = 0;
+    return;
   }
 
   const viewerRect = viewer.getBoundingClientRect();
@@ -1921,29 +2096,64 @@ function getHumanTargetX() {
     Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) *
     camera.aspect;
 
-  return pixelShift * visibleWorldWidth / viewerRect.width;
+  humanTargetX = pixelShift * visibleWorldWidth / viewerRect.width;
 }
 
-// Main rendering loop
-function animate() {
-  requestAnimationFrame(animate);
+// Render loop
+
+function frame(now) {
+  rafId = requestAnimationFrame(frame);
+
+  // Cap the frame rate on small screens
+  if (mobileQuery.matches && now - lastFrameTime < MOBILE_MIN_FRAME_MS) return;
+  lastFrameTime = now;
 
   const dt = Math.min(clock.getDelta(), .05);
+  if (!modelReady) return;
+
   const bodySmooth = 1 - Math.pow(.88, dt * 60);
   const slideSmooth = reducedMotion.matches ? 1 : 1 - Math.exp(-5 * dt);
 
-  bodyRoot.position.x = THREE.MathUtils.lerp(
-    bodyRoot.position.x, getHumanTargetX(), slideSmooth
-  );
-  shadowGroup.position.x = bodyRoot.position.x;
+  // Human slide + rotation (snap when settled so the loop can go idle)
+  const prevX = bodyRoot.position.x;
+  const prevRotation = bodyRoot.rotation.y;
 
-  bodyRoot.rotation.y = THREE.MathUtils.lerp(
-    bodyRoot.rotation.y, targetBodyRotationY, bodySmooth
-  );
+  let nextX = THREE.MathUtils.lerp(prevX, humanTargetX, slideSmooth);
+  if (Math.abs(nextX - humanTargetX) < bodyHeight * 1e-4) nextX = humanTargetX;
 
-  animateClinic(dt);
-  updateRugFollowing();
-  animateHighlights(dt);
+  let nextRotation = THREE.MathUtils.lerp(prevRotation, targetBodyRotationY, bodySmooth);
+  if (Math.abs(nextRotation - targetBodyRotationY) < ROTATION_SETTLE) {
+    nextRotation = targetBodyRotationY;
+  }
+
+  bodyRoot.position.x = nextX;
+  shadowGroup.position.x = nextX;
+  bodyRoot.rotation.y = nextRotation;
+
+  const bodyMoving = nextX !== prevX || nextRotation !== prevRotation;
+  const clinicMoving = animateClinic(dt);
+  const highlighting = animateHighlights(dt);
+
+  if (!(bodyMoving || clinicMoving || highlighting || dirty)) return; // idle: skip drawing
+  dirty = false;
+
+  if (bodyMoving || clinicMoving) updateRugFollowing();
+
+  // Refresh the shadow map only when the clinic has moved enough to matter
+  if (
+    Math.abs(clinicGroup.rotation.y - shadowRotation) > SHADOW_ROTATION_STEP ||
+    Math.abs(clinicGroup.position.x - shadowOffset) > bodyHeight * SHADOW_OFFSET_STEP ||
+    Number.isNaN(shadowRotation)
+  ) {
+    shadowRotation = clinicGroup.rotation.y;
+    shadowOffset = clinicGroup.position.x;
+    shadowDirty = true;
+  }
+
+  if (shadowDirty) {
+    renderer.shadowMap.needsUpdate = true;
+    shadowDirty = false;
+  }
 
   renderer.clear();
   renderer.render(clinicScene, camera);
@@ -1951,7 +2161,70 @@ function animate() {
   renderer.render(bodyScene, camera);
 }
 
-animate();
+function startLoop() {
+  if (rafId || disposed) return;
+  clock.getDelta(); // discard time spent paused
+  markDirty();
+  rafId = requestAnimationFrame(frame);
+}
+
+function stopLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = 0;
+}
+
+// Don't burn GPU in background tabs
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopLoop();
+  else startLoop();
+});
+
+// WebGL context loss
+
+renderer.domElement.addEventListener("webglcontextlost", event => {
+  event.preventDefault();
+  stopLoop();
+  loading.classList.remove("hidden");
+  loading.classList.add("failed");
+  loadMessage.textContent = "The graphics context was lost. Waiting for it to be restored…";
+});
+
+renderer.domElement.addEventListener("webglcontextrestored", () => {
+  loading.classList.remove("failed");
+  loading.classList.add("hidden");
+  shadowDirty = true;
+  startLoop();
+});
+
+// Cleanup
+
+function disposeObject(root) {
+  root.traverse(object => {
+    if (object.geometry) object.geometry.dispose();
+    if (object.material) disposeMaterial(object.material);
+  });
+}
+
+function disposeApp() {
+  if (disposed) return;
+  disposed = true;
+  stopLoop();
+  resizeObserver.disconnect();
+  disposeObject(clinicScene);
+  disposeObject(bodyScene);
+  if (shadowTexture) shadowTexture.dispose();
+  renderer.dispose();
+}
+
+// If the page is going into the back/forward cache (persisted), keep everything alive.
+window.addEventListener("pagehide", event => {
+  if (!event.persisted) disposeApp();
+});
+
+// Start
+
+startLoop();
+initScene();
 </script>
 </body>
 </html>
