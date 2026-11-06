@@ -908,11 +908,13 @@ const loader = new GLTFLoader();
 const clock = new THREE.Clock();
 const clinicGroup = new THREE.Group();
 const bodyRoot = new THREE.Group();
-const shadowGroup = new THREE.Group();
+const humanShadowProxy = new THREE.Group();
+let floorShadowCatcher = null;
+let rugShadowCatcher = null;
 
 clinicScene.add(clinicGroup);
 bodyScene.add(bodyRoot);
-bodyScene.add(shadowGroup);
+clinicScene.add(humanShadowProxy);
 
 // Application state
 const meshData = [];
@@ -932,7 +934,7 @@ let clinicRotation = 0;
 let clinicOffset = 0;
 let highlightTime = 0;
 let humanTargetX = 0;
-let shadowTexture = null;
+
 
 // Render-loop state
 let rafId = 0;
@@ -976,7 +978,6 @@ function failModelLoading(name, error) {
 }
 
 // Lighting
-
 function addLights(scene, clinic = false) {
   scene.add(new THREE.HemisphereLight(
     0xf4ffff, 0x899d9b, clinic ? 1.45 : 2.05
@@ -1022,7 +1023,6 @@ const clinicKeyLight = addLights(clinicScene, true);
 addLights(bodyScene, false);
 
 // Panel controls (with focus management)
-
 function setMobileMenu(open) {
   bodyPanel.classList.toggle("open", open);
   menuToggle.setAttribute("aria-expanded", String(open));
@@ -1068,7 +1068,6 @@ document.addEventListener("keydown", event => {
 });
 
 // Body part names and preset lookup
-
 function normalizeBodyPart(value) {
   const text = String(value || "")
     .toLowerCase()
@@ -1113,7 +1112,6 @@ function getMatchingPresets(regionId, region) {
 }
 
 // Therapy preset cards
-
 function createPresetCard(preset) {
   const type = preset.mode.toLowerCase();
   const card = document.createElement("article");
@@ -1254,6 +1252,27 @@ function openPresetPanel(regionId) {
 }
 
 // Rug follows the human
+function updateRugShadowCatcher() {
+  if (!rugObject) return;
+  rugObject.updateWorldMatrix(true, true);
+  const bounds = new THREE.Box3().setFromObject(rugObject);
+  if (bounds.isEmpty()) return;
+  if (!rugShadowCatcher) {
+    rugShadowCatcher = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.ShadowMaterial({ color: 0x233b3d, opacity: .50 })
+    );
+    rugShadowCatcher.rotation.x = -Math.PI / 2;
+    rugShadowCatcher.receiveShadow = true;
+    rugShadowCatcher.renderOrder = 9;
+    clinicScene.add(rugShadowCatcher);
+  }
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  // Place just above the visible rug to prevent shadows being hidden by it.
+  rugShadowCatcher.position.set(center.x, bounds.max.y + bodyHeight * .0015, center.z);
+  rugShadowCatcher.scale.set(Math.max(.01, size.x), Math.max(.01, size.z), 1);
+}
 
 function updateRugFollowing() {
   if (!rugObject || !rugAnchorLocal || !modelReady) return;
@@ -1279,66 +1298,28 @@ function updateRugFollowing() {
 
   rugObject.position.add(rugTargetWorld.sub(rugCenterWorld));
   rugObject.updateWorldMatrix(false, true);
+  updateRugShadowCatcher();
+  shadowDirty = true;
 }
 
-// Contact shadow
-
-function createShadowTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-
-  const ctx = canvas.getContext("2d");
-  const gradient = ctx.createRadialGradient(128, 128, 6, 128, 128, 126);
-
-  gradient.addColorStop(0, "rgba(26,45,48,.80)");
-  gradient.addColorStop(.20, "rgba(26,45,48,.62)");
-  gradient.addColorStop(.45, "rgba(26,45,48,.30)");
-  gradient.addColorStop(.72, "rgba(26,45,48,.08)");
-  gradient.addColorStop(1, "rgba(26,45,48,0)");
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 256, 256);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
-function setupHumanShadow(H) {
-  shadowTexture = createShadowTexture();
-
-  function addShadow(width, depth, opacity, y) {
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(width, depth),
-      new THREE.MeshBasicMaterial({
-        map: shadowTexture,
-        transparent: true,
-        opacity,
-        depthWrite: false,
-        depthTest: true,
-        side: THREE.DoubleSide,
-        toneMapped: false
-      })
-    );
-
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(0, y, H * HUMAN_SHADOW.offsetZ);
-    shadowGroup.add(mesh);
-  }
-
-  addShadow(
-    H * HUMAN_SHADOW.width,
-    H * HUMAN_SHADOW.depth,
-    HUMAN_SHADOW.opacity * .65,
-    H * HUMAN_SHADOW.offsetY
-  );
-  addShadow(
-    H * HUMAN_SHADOW.width * .52,
-    H * HUMAN_SHADOW.depth * .52,
-    HUMAN_SHADOW.opacity,
-    H * (HUMAN_SHADOW.offsetY + .002)
-  );
+// Shadow-only human copy shares geometry with the visible body.
+// The visible human stays in bodyScene for independent highlighting and lighting.
+function setupHumanShadow(body) {
+  const shadowMaterial = new THREE.MeshBasicMaterial({
+    colorWrite: false,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const proxy = body.clone(true);
+  proxy.traverse(object => {
+    if (!object.isMesh) return;
+    object.material = shadowMaterial;
+    object.castShadow = true;
+    object.receiveShadow = false;
+  });
+  humanShadowProxy.add(proxy);
+  humanShadowProxy.userData.shadowMaterial = shadowMaterial;
+  shadowDirty = true;
 }
 
 // Clinic environment
@@ -1362,8 +1343,20 @@ function buildClinicShell(H) {
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -H * .055;
-  floor.receiveShadow = true;
+  floor.receiveShadow = false;
   clinicGroup.add(floor);
+
+  // One continuous receiver above the room floor prevents shadow breaks
+  // between the procedural floor and imported floor geometry.
+  floorShadowCatcher = new THREE.Mesh(
+    new THREE.PlaneGeometry(W, H * 8),
+    new THREE.ShadowMaterial({ color: 0x233b3d, opacity: .50 })
+  );
+  floorShadowCatcher.rotation.x = -Math.PI / 2;
+  floorShadowCatcher.position.y = H * .006;
+  floorShadowCatcher.receiveShadow = true;
+  floorShadowCatcher.renderOrder = 8;
+  clinicGroup.add(floorShadowCatcher);
 
   const wall = new THREE.Mesh(
     new THREE.PlaneGeometry(W, roomHeight),
@@ -1418,7 +1411,7 @@ function buildClinicShell(H) {
 
 function configureClinicShadowCamera(H) {
   const cam = clinicKeyLight.shadow.camera;
-  const extent = H * 4;
+  const extent = H * (CLINIC_SHADOW.frustumScale ?? 5.0);
 
   cam.left = -extent;
   cam.right = extent;
@@ -1428,8 +1421,11 @@ function configureClinicShadowCamera(H) {
   cam.far = H * 30;
   cam.updateProjectionMatrix();
 
-  clinicKeyLight.position.set(H * 2.5, H * 4.5, H * 2.6);
-  clinicKeyLight.target.position.set(0, H * .8, -H * .8);
+  // A higher key light creates compact shadows that stay close to their casters.
+  const lightPos = CLINIC_SHADOW.lightPosition ?? [1.3, 7, 2];
+  const lightAim = CLINIC_SHADOW.lightTarget ?? [0, .7, -.4];
+  clinicKeyLight.position.set(H * lightPos[0], H * lightPos[1], H * lightPos[2]);
+  clinicKeyLight.target.position.set(H * lightAim[0], H * lightAim[1], H * lightAim[2]);
   clinicScene.add(clinicKeyLight.target);
 }
 
@@ -1468,10 +1464,11 @@ function setupClinicModel(gltf, H) {
     console.warn("[FahrenCool] Rug not found:", RUG_NAME);
   }
 
+  
+  // Apply the same directional shadow light to all solid clinic objects.
   clinicModel.traverse(object => {
     if (!object.isMesh) return;
 
-    object.receiveShadow = true;
     let hierarchy = "";
     let node = object;
 
@@ -1480,9 +1477,16 @@ function setupClinicModel(gltf, H) {
       node = node.parent;
     }
 
-    const furniture = /desk|stool|chair|couch|bed|trolley|cabinet/.test(hierarchy);
-    const excluded = /floor-mat|rug|carpet|curtain|wall|ceiling|glass/.test(hierarchy);
-    object.castShadow = furniture && !excluded;
+    const structural = /floor|ground|wall|ceiling|window|glass|rug|carpet|floor.mat/.test(hierarchy);
+
+    const transparent = (
+      Array.isArray(object.material)
+        ? object.material.some(material => material?.transparent && material.opacity < 0.5)
+        : object.material?.transparent && object.material.opacity < 0.5
+    );
+
+    object.castShadow = !structural && !transparent;
+    object.receiveShadow = false;
   });
 
   shadowDirty = true;
@@ -1490,7 +1494,6 @@ function setupClinicModel(gltf, H) {
 }
 
 // Region helpers shared by picking and highlighting (the GLSL in the highlight shader mirrors these two functions)
-
 const SURFACE_CODES = { both: 0, front: 1, back: 2, frontSide: 3 };
 
 function regionDistance(region, x, y) {
@@ -1513,7 +1516,6 @@ function getSurfaceMask(nx, nz, surface) {
 }
 
 // GPU highlight: region masks are evaluated in the fragment shader
-
 // Two slots: the selected region (0) and the region fading out (1)
 const highlightUniforms = {
   uHighlightColor: { value: HIGHLIGHT_COLOR },
@@ -1678,7 +1680,7 @@ function setupHuman(gltf) {
 
   buildClinicShell(bodyHeight);
   configureClinicShadowCamera(bodyHeight);
-  setupHumanShadow(bodyHeight);
+  setupHumanShadow(body);
 
   modelReady = true;
   resize();
@@ -1718,7 +1720,6 @@ async function initScene() {
 }
 
 // Camera
-
 function updateCamera() {
   if (!modelReady) return;
 
@@ -1767,7 +1768,6 @@ function setBodyView(side, animate = true) {
 }
 
 // Pointer controls
-
 viewer.addEventListener("pointerdown", event => {
   if (!modelReady || isDragging) return;
 
@@ -1836,7 +1836,6 @@ viewer.addEventListener("pointerleave", () => {
 });
 
 // Click picking
-
 const bodyRaycaster = new THREE.Raycaster();
 const bodyClickNDC = new THREE.Vector2();
 const barycentric = new THREE.Vector3();
@@ -1908,7 +1907,6 @@ function selectRegionFromBodyClick(event) {
 }
 
 // Highlight selection and animation
-
 function highlightBodyPart(regionId) {
   if (!modelReady) return;
 
@@ -1984,7 +1982,6 @@ function animateHighlights(dt) {
 }
 
 // Body parts list
-
 Object.entries(REGIONS)
   .sort((a, b) => b[1].y - a[1].y)
   .forEach(([id, region]) => {
@@ -2000,11 +1997,11 @@ Object.entries(REGIONS)
 
 document.getElementById("clear").addEventListener("click", () => {
   highlightBodyPart(null);
+  setBodyView("front", true);
   setMobileMenu(false);
 });
 
 // Resize
-
 function resize() {
   const width = viewer.clientWidth;
   const height = viewer.clientHeight;
@@ -2030,7 +2027,6 @@ mobileQuery.addEventListener("change", () => { updateHumanTargetX(); markDirty()
 reducedMotion.addEventListener("change", markDirty);
 
 // Clinic animation
-
 // Returns true when the clinic is (or just stopped) moving
 function animateClinic(dt) {
   if (!CLINIC_ANIMATION.enabled || reducedMotion.matches) {
@@ -2066,7 +2062,6 @@ function animateClinic(dt) {
 }
 
 // Human position between the panels (cached, not computed per frame)
-
 function updateHumanTargetX() {
   if (!modelReady || mobileQuery.matches || !presetPanel.classList.contains("open")) {
     humanTargetX = 0;
@@ -2120,8 +2115,9 @@ function frame(now) {
   }
 
   bodyRoot.position.x = nextX;
-  shadowGroup.position.x = nextX;
+  humanShadowProxy.position.x = nextX;
   bodyRoot.rotation.y = nextRotation;
+  humanShadowProxy.rotation.y = nextRotation;
 
   const bodyMoving = nextX !== prevX || nextRotation !== prevRotation;
   const clinicMoving = animateClinic(dt);
@@ -2131,6 +2127,7 @@ function frame(now) {
   dirty = false;
 
   if (bodyMoving || clinicMoving) updateRugFollowing();
+  if (bodyMoving) shadowDirty = true;
 
   // Refresh the shadow map only when the clinic has moved enough to matter
   if (
@@ -2190,7 +2187,6 @@ renderer.domElement.addEventListener("webglcontextrestored", () => {
 });
 
 // Cleanup
-
 function disposeObject(root) {
   root.traverse(object => {
     if (object.geometry) object.geometry.dispose();
@@ -2203,9 +2199,15 @@ function disposeApp() {
   disposed = true;
   stopLoop();
   resizeObserver.disconnect();
+  humanShadowProxy.traverse(object => {
+    if (object.isMesh) object.material = null;
+    if (object.isMesh) object.geometry = null;
+  });
   disposeObject(clinicScene);
   disposeObject(bodyScene);
-  if (shadowTexture) shadowTexture.dispose();
+  if (humanShadowProxy.userData.shadowMaterial) {
+    humanShadowProxy.userData.shadowMaterial.dispose();
+  }
   renderer.dispose();
 }
 
@@ -2215,7 +2217,6 @@ window.addEventListener("pagehide", event => {
 });
 
 // Start
-
 startLoop();
 initScene();
 </script>

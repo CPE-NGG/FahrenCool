@@ -9,7 +9,10 @@ export const HUMAN_SHADOW = {
 export const CLINIC_SHADOW = {
   desktopResolution: 2048,
   mobileResolution: 1024,
-  bias: -0.0002,
-  normalBias: 0.025,
-  lightIntensity: 1.7
+  bias: -0.00015,
+  normalBias: 0.008,
+  lightIntensity: 1.7,
+  frustumScale: 5.0,
+  lightPosition: [-2.8, 7, 4],
+  lightTarget: [0, 0.8, -0.4]
 };
