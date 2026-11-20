@@ -3,7 +3,7 @@ export const THERAPY_PRESETS = [
   // Neck
   {
     bodyPart: "neck",
-    name: "Muscle Pain",
+    name: "Neck Muscle Pain",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -11,7 +11,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "neck",
-    name: "Muscle Spasm",
+    name: "Neck Muscle Spasms",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–40°C",
@@ -21,7 +21,7 @@ export const THERAPY_PRESETS = [
   // Shoulder
   {
     bodyPart: "shoulder",
-    name: "Muscle Strain",
+    name: "Shoulder Muscle Strain",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -29,7 +29,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "shoulder",
-    name: "Stiffness / Tightness",
+    name: "Shoulder Stiffness and Tension",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -39,7 +39,7 @@ export const THERAPY_PRESETS = [
   // Elbow
   {
     bodyPart: "elbow",
-    name: "Tendinitis Flare-Up",
+    name: "Elbow Tendinitis Flare-Up",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -49,7 +49,7 @@ export const THERAPY_PRESETS = [
   // Thigh
   {
     bodyPart: "thigh",
-    name: "Hamstring / Quadriceps Strain",
+    name: "Hamstring or Quadriceps Strain",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -57,7 +57,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "thigh",
-    name: "Muscle Tightness",
+    name: "Thigh Muscle Tightness",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -67,7 +67,7 @@ export const THERAPY_PRESETS = [
   // Knee
   {
     bodyPart: "knee",
-    name: "Sprain / Swelling",
+    name: "Knee Sprain and Swelling",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -75,7 +75,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "knee",
-    name: "Arthritis Stiffness",
+    name: "Arthritis-Related Knee Stiffness",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -83,7 +83,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "knee",
-    name: "Post-Activity Soreness",
+    name: "Post-Exercise Knee Soreness",
     condition: "Chronic",
     mode: "CONTRAST",
     temperature: "15–20°C / 38–42°C",
@@ -94,7 +94,7 @@ export const THERAPY_PRESETS = [
   // Upper Back
   {
     bodyPart: "upper back",
-    name: "Muscle Tension / Spasm",
+    name: "Upper Back Muscle Tension and Spasms",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -104,7 +104,7 @@ export const THERAPY_PRESETS = [
   // Lower Back
   {
     bodyPart: "lower back",
-    name: "Muscle Strain",
+    name: "Lower Back Muscle Strain",
     guidanceName: "Lower Back Strain",
     condition: "Acute",
     mode: "COOL",
@@ -113,7 +113,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "lower back",
-    name: "Pain / Spasm",
+    name: "Lower Back Pain and Spasms",
     guidanceName: "Lower Back Pain / Spasm",
     condition: "Chronic",
     mode: "HEAT",
@@ -124,7 +124,7 @@ export const THERAPY_PRESETS = [
   // Hip / Gluteal
   {
     bodyPart: "hip/gluteal",
-    name: "Muscle Strain",
+    name: "Hip and Gluteal Muscle Strain",
     condition: "Acute",
     mode: "COOL",
     temperature: "15–20°C",
@@ -132,7 +132,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "hip/gluteal",
-    name: "Tightness",
+    name: "Hip and Gluteal Muscle Tightness",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -142,7 +142,7 @@ export const THERAPY_PRESETS = [
   // Calf
   {
     bodyPart: "calf",
-    name: "Muscle Strain",
+    name: "Calf Muscle Strain",
     guidanceName: "Calf Strain",
     condition: "Acute",
     mode: "COOL",
@@ -151,7 +151,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "calf",
-    name: "Muscle Tightness",
+    name: "Calf Muscle Tightness",
     condition: "Chronic",
     mode: "HEAT",
     temperature: "38–42°C",
@@ -161,7 +161,7 @@ export const THERAPY_PRESETS = [
   // Ankle
   {
     bodyPart: "ankle",
-    name: "Sprain",
+    name: "Ankle Ligament Sprain",
     guidanceName: "Ankle Sprain",
     condition: "Acute",
     mode: "COOL",
@@ -170,7 +170,7 @@ export const THERAPY_PRESETS = [
   },
   {
     bodyPart: "ankle",
-    name: "Chronic Stiffness",
+    name: "Ankle Joint Stiffness",
     condition: "Chronic",
     mode: "CONTRAST",
     temperature: "15–20°C / 38–42°C",
