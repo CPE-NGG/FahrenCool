@@ -922,6 +922,38 @@ button:focus-visible, summary:focus-visible {
 .preset-fact-container .preset-intro { color: #304e78; }
 .body-list { scrollbar-color: #a8c6f3 transparent; }
 .preset-scroll { scrollbar-color: #a8c6f3 transparent; }
+
+/* Mobile layout: keep the drawer centered below the header. */
+@media (max-width: 767px) {
+  .site-header { gap: 8px; padding: 10px 11px; }
+  .site-header > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .brand { font-size: clamp(17px, 4.5vw, 21px); white-space: nowrap; }
+  .brand-subtitle { font-size: 9px; letter-spacing: .25px; }
+  .header-actions { flex: 0 0 auto; gap: 6px; align-items: stretch; }
+  .header-actions .menu-toggle,
+  .header-actions .back-button {
+    display: flex; align-items: center; justify-content: center;
+    width: 82px; min-width: 82px; min-height: 48px;
+    padding: 6px 5px; font-size: 10px; line-height: 1.2;
+    text-align: center; white-space: normal;
+  }
+  .body-panel {
+    top: 126px;
+    left: 50%;
+    bottom: 16px;
+    width: min(340px, calc(100vw - 32px));
+    max-height: calc(100dvh - 142px);
+    transform: translateX(calc(-50% - 110vw));
+  }
+  .body-panel.open { transform: translateX(-50%); }
+}
+@media (max-width: 380px) {
+  .header-actions .menu-toggle,
+  .header-actions .back-button { width: 72px; min-width: 72px; font-size: 9px; }
+  .brand { font-size: 17px; }
+  .brand-subtitle { font-size: 8px; }
+}
+
 </style>
 
 <script type="importmap">
@@ -1115,6 +1147,7 @@ const WALK_FILE = "./assets/walking.fbx";
 const IDLE_FILE = "./assets/breathing.fbx";
 const MAIN_PAGE_URL = "./index.html";
 const CAMERA_REVEAL_SECONDS = 3.4;
+const MOBILE_CAMERA_REVEAL_SECONDS = 2.0;
 const CAMERA_CLOSE_DISTANCE_FACTOR = 2.15; // Increase for a safer, wider opening shot
 const CAMERA_HEAD_HEIGHT_FACTOR = 0.84; // Adjust if the head is too high/low
 let cinematicActive = false;
@@ -1187,7 +1220,7 @@ function startCinematic() {
 function advanceCinematic(dt) {
   if (!cinematicActive) return;
   cinematicElapsed += dt;
-  const t = Math.min(1, cinematicElapsed / CAMERA_REVEAL_SECONDS);
+  const t = Math.min(1, cinematicElapsed / (mobileQuery.matches ? MOBILE_CAMERA_REVEAL_SECONDS : CAMERA_REVEAL_SECONDS));
   const eased = smoothstep(t);
   camera.position.lerpVectors(cinematicStart, cinematicEnd, eased);
   const target = cinematicStartTarget.clone().lerp(cinematicEndTarget, eased);
@@ -1209,7 +1242,7 @@ const ENTRANCE_DURATION = 3.2;
 const EXIT_DURATION = 2.7;
 const ROTATION_SPEED = 8;
 const MODEL_HEIGHT = 1.7;
-const MOBILE_FRAME_MS = 28;
+const MOBILE_FRAME_MS = 33; // ~30 FPS on phones; fewer expensive GLB draws
 const FOOT_GROUND_CLEARANCE = 0; // 0 = sole reaches rug; negative lowers character
 const SHADOW_RECEIVER_LIFT = 0.0015; // Fraction of body height above rug surface
 
@@ -1243,14 +1276,14 @@ scene.background = new THREE.Color("#f3e8d5");
 const camera = new THREE.PerspectiveCamera(32, 1, .01, 1000);
 
 const renderer = new THREE.WebGLRenderer({
-  antialias: true,
+  antialias: !mobileQuery.matches,
   powerPreference: "high-performance"
 });
 
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !mobileQuery.matches; // Avoid costly shadow maps on phones
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = false;
 
@@ -2805,7 +2838,7 @@ function resize() {
   renderer.setPixelRatio(
     Math.min(
       devicePixelRatio,
-      mobileQuery.matches ? 1.5 : 2
+      mobileQuery.matches ? 1 : 2
     )
   );
 
