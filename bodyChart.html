@@ -1251,8 +1251,8 @@ const EXIT_DURATION = 2.7;
 const ROTATION_SPEED = 8;
 const MODEL_HEIGHT = 1.7;
 const MOBILE_FRAME_MS = 33; // ~30 FPS on phones; fewer expensive GLB draws
-const MOBILE_PIXEL_RATIO = 1; // Start with a lightweight mobile render target
-const MOBILE_MIN_PIXEL_RATIO = 0.7; // Adaptive lower bound for slower devices
+const MOBILE_PIXEL_RATIO = 1.5; // Stable, sharper mobile render target (no adaptive pixelation)
+const MOBILE_SHADOW_INTERVAL_MS = 120; // Reuse shadows between updates on mobile
 const FOOT_GROUND_CLEARANCE = 0; // 0 = sole reaches rug; negative lowers character
 const SHADOW_RECEIVER_LIFT = 0.0015; // Fraction of body height above rug surface
 
@@ -1302,10 +1302,7 @@ viewer.appendChild(renderer.domElement);
 const gltfLoader = new GLTFLoader();
 const fbxLoader = new FBXLoader();
 const clock = new THREE.Clock();
-let adaptiveMobilePixelRatio = MOBILE_PIXEL_RATIO;
-let slowMobileFrames = 0;
-let fastMobileFrames = 0;
-let lastRenderedAt = 0;
+let lastMobileShadowUpdate = 0;
 
 const clinicGroup = new THREE.Group();
 const bodyRoot = new THREE.Group();
@@ -2852,7 +2849,7 @@ function resize() {
   renderer.setPixelRatio(
     Math.min(
       devicePixelRatio,
-      mobileQuery.matches ? adaptiveMobilePixelRatio : 2
+      mobileQuery.matches ? MOBILE_PIXEL_RATIO : 2
     )
   );
 
@@ -2934,27 +2931,6 @@ function frame(now) {
   const dt = Math.min(clock.getDelta(), .05);
   if (!modelReady) return;
 
-  // Adjust mobile resolution conservatively based on actual rendered-frame time.
-  // Do not change resolution during the cinematic reveal or on every frame.
-  if (mobileQuery.matches && !cinematicActive && lastRenderedAt) {
-    const elapsed = now - lastRenderedAt;
-    slowMobileFrames = elapsed > 47 ? slowMobileFrames + 1 : 0;
-    fastMobileFrames = elapsed < 37 ? fastMobileFrames + 1 : 0;
-    if (slowMobileFrames >= 35 && adaptiveMobilePixelRatio > MOBILE_MIN_PIXEL_RATIO) {
-      adaptiveMobilePixelRatio = Math.max(MOBILE_MIN_PIXEL_RATIO, adaptiveMobilePixelRatio - 0.1);
-      renderer.setPixelRatio(Math.min(devicePixelRatio, adaptiveMobilePixelRatio));
-      markShadowDirty();
-      slowMobileFrames = 0;
-      fastMobileFrames = 0;
-    } else if (fastMobileFrames >= 180 && adaptiveMobilePixelRatio < MOBILE_PIXEL_RATIO) {
-      adaptiveMobilePixelRatio = Math.min(MOBILE_PIXEL_RATIO, adaptiveMobilePixelRatio + 0.1);
-      renderer.setPixelRatio(Math.min(devicePixelRatio, adaptiveMobilePixelRatio));
-      slowMobileFrames = 0;
-      fastMobileFrames = 0;
-    }
-  }
-  lastRenderedAt = now;
-
   const previousX = bodyRoot.position.x;
   const previousRotation = bodyRoot.rotation.y;
 
@@ -3025,9 +3001,10 @@ function frame(now) {
     markShadowDirty();
   }
 
-  if (shadowDirty) {
+  if (shadowDirty && (!mobileQuery.matches || now - lastMobileShadowUpdate >= MOBILE_SHADOW_INTERVAL_MS)) {
     renderer.shadowMap.needsUpdate = true;
     shadowDirty = false;
+    lastMobileShadowUpdate = now;
   }
 
   renderer.render(scene, camera);
@@ -3038,7 +3015,7 @@ function startLoop() {
 
   clock.getDelta();
   lastFrameTime = 0;
-  lastRenderedAt = 0;
+  lastMobileShadowUpdate = 0;
   rafId = requestAnimationFrame(frame);
 }
 
