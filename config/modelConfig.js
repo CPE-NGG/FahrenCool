@@ -1,5 +1,12 @@
-export const HUMAN_MODEL_URL = "../assets/scene.gltf";
-export const CLINIC_MODEL_URL = "../assets/model.glb";
+export const HUMAN_MODEL_URL = new URL(
+  "../assets/scene.gltf",
+  import.meta.url
+).href;
+
+export const CLINIC_MODEL_URL = new URL(
+  "../assets/model.glb",
+  import.meta.url
+).href;
 
 export const RUG_NAME = "019-practice-floor-mat";
 export const FRONT_DIRECTION = 1;
