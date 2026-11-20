@@ -16,7 +16,7 @@
 <div class="shell">
   <header class="topbar">
     <div><a class="brand" href="./index.html" aria-label="FahrenCool home"><span class="fahren">FAHREN</span><span class="cool">COOL</span></a><div class="eyebrow">REMOTE THERAPY CONSOLE</div></div>
-    <div class="topright"><span class="modeindicator" id="modeIndicator">NOT CONNECTED</span><span class="pill"><span class="dot" id="headerDot"></span><span id="headerStatus">Offline</span></span><a class="outline" href="./bodyChart/bodyChart.html">Body Chart ↗</a></div>
+    <div class="topright"><span class="modeindicator" id="modeIndicator">NOT CONNECTED</span><span class="pill"><span class="dot" id="headerDot"></span><span id="headerStatus">Offline</span></span><a class="outline" href="./bodyChart.html">Body Chart ↗</a></div>
   </header>
   <section class="welcome"><div><div class="smallcaps">DEVICE OVERVIEW</div><h1>Therapy Dashboard</h1><p>Monitor your FahrenCool device and manage therapy temperature and session duration.</p></div><span class="pill" id="sessionPill">No active session</span></section>
   <div class="columns">
@@ -35,7 +35,7 @@
         <div class="actionrow"><button id="startButton" class="primary" type="button" disabled>Start Therapy</button><button id="stopButton" class="danger" type="button" disabled>Stop Session</button></div>
         <div class="subtle">Start sends the requested mode, temperature and duration to the LCD control API. The LCD must forward approved commands to the ESP32 controller and enforce safety interlocks. Stop requests a device-side shutdown.</div><div class="feedback" id="controlFeedback" role="status" aria-live="polite"></div>
       </section>
-      <section class="linkcard"><div><h2>Explore the 3D Body Chart</h2><p>See anatomical regions and their associated hot and cold therapy reference presets.</p></div><a href="./bodyChart/bodyChart.html">Open Body Chart ↗</a></section>
+      <section class="linkcard"><div><h2>Explore the 3D Body Chart</h2><p>See anatomical regions and their associated hot and cold therapy reference presets.</p></div><a href="./bodyChart.html">Open Body Chart ↗</a></section>
     </div>
     <div class="stack">
       <section class="card" aria-labelledby="linkTitle"><div class="cardhead"><h2 id="linkTitle">Device Connection</h2><span class="pill"><span class="dot" id="connectionDot"></span><span id="connectionLabel">Disconnected</span></span></div>
