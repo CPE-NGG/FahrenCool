@@ -25,9 +25,11 @@ import {
 } from "../config/lightingConfig.js";
 
 // File paths
-const WALK_FILE = "../assets/walking.fbx";
-const IDLE_FILE = "../assets/breathing.fbx";
+const WALK_FILE = new URL("../assets/walking.fbx", import.meta.url).href;
+const IDLE_FILE = new URL("../assets/breathing.fbx", import.meta.url).href;
 const MAIN_PAGE_URL = "../index.html";
+// Resolve GLB relative to this module, not the page URL or config module.
+const CLINIC_URL = new URL("../assets/model.glb", import.meta.url).href;
 const CAMERA_REVEAL_SECONDS = 3.4;
 const MOBILE_CAMERA_REVEAL_SECONDS = 2.0;
 const CAMERA_CLOSE_DISTANCE_FACTOR = 2.15; // Increase for a safer, wider opening shot
@@ -132,7 +134,7 @@ const SHADOW_RECEIVER_LIFT = 0.0015; // Fraction of body height above rug surfac
 
 // Colors
 const SKIN_COLOR = new THREE.Color(SKIN_HEX);
-const HIGHLIGHT_COLOR = new THREE.Color(HIGHLIGHT_HEX); // Selected body regions: neutral blue-violet
+const HIGHLIGHT_COLOR = new THREE.Color(0x7187D9); // Selected body regions: neutral blue-violet
 
 // DOM elements
 const viewer = document.getElementById("viewer");
@@ -174,6 +176,13 @@ renderer.shadowMap.autoUpdate = false;
 viewer.appendChild(renderer.domElement);
 
 const gltfLoader = new GLTFLoader();
+renderer.domElement.addEventListener("webglcontextlost", event => {
+  event.preventDefault();
+  console.error("FahrenCool: WebGL context lost; the mobile GPU may be out of memory.");
+});
+renderer.domElement.addEventListener("webglcontextrestored", () => {
+  console.info("FahrenCool: WebGL context restored. Reload if the clinic remains invisible.");
+});
 const fbxLoader = new FBXLoader();
 const clock = new THREE.Clock();
 let lastMobileShadowUpdate = 0;
@@ -1048,7 +1057,12 @@ function setupClinicModel(gltf, H) {
   const clinicModel = gltf.scene;
 
   clinicGroup.add(clinicModel);
-  recolorClinicFurniture(clinicModel);
+  // Recoloring is cosmetic: a material issue must never prevent clinic display.
+  try {
+    recolorClinicFurniture(clinicModel);
+  } catch (error) {
+    console.warn("Clinic furniture recoloring skipped:", error);
+  }
   clinicModel.updateMatrixWorld(true);
 
   const bounds = new THREE.Box3().setFromObject(clinicModel);
@@ -1747,12 +1761,16 @@ mobileQuery.addEventListener("change", resize);
 // Load models
 async function initScene() {
   try {
-    const clinicPromise = gltfLoader
-      .loadAsync(CLINIC_MODEL_URL)
-      .catch(error => {
-        console.warn("Clinic unavailable:", error);
-        return null;
-      });
+    console.info("FahrenCool: loading clinic GLB", CLINIC_URL);
+    const clinicPromise = gltfLoader.loadAsync(CLINIC_URL).then(gltf => {
+      let meshes = 0;
+      gltf.scene.traverse(node => { if (node.isMesh) meshes++; });
+      console.info("FahrenCool: clinic parsed", { meshes, visible: gltf.scene.visible });
+      return gltf;
+    }).catch(error => {
+      console.error("FahrenCool: clinic GLB download/parse failed:", error);
+      return null;
+    });
 
     const [walking, breathing, clinic] = await Promise.all([
       fbxLoader.loadAsync(WALK_FILE),
@@ -1764,7 +1782,21 @@ async function initScene() {
     setupCharacterAnimations(walking, breathing);
 
     if (clinic) {
-      setupClinicModel(clinic, bodyHeight);
+      try {
+        setupClinicModel(clinic, bodyHeight);
+        const clinicBounds = new THREE.Box3().setFromObject(clinic.scene);
+        console.info("FahrenCool: clinic placed", {
+          boundsMin: clinicBounds.min.toArray(),
+          boundsMax: clinicBounds.max.toArray(),
+          scale: clinic.scene.scale.x
+        });
+      } catch (error) {
+        console.error("FahrenCool: clinic placement failed:", error);
+        clinicGroup.remove(clinic.scene);
+        rugObject = null;
+      }
+    } else {
+      console.warn("FahrenCool: continuing with the human model only; clinic GLB unavailable.");
     }
 
     updateRugFollowing();
