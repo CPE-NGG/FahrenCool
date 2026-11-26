@@ -5,7 +5,7 @@
   <meta content="width=device-width,initial-scale=1" name="viewport"/>
   <meta content="#f6f9ff" name="theme-color"/>
   <title>
-   FahrenCool | Therapy Command Center
+   FahrenCool | Therapy Demo Dashboard
   </title>
   <link href="./favicon.ico" rel="icon" type="image/x-icon"/>
   <style>
@@ -168,6 +168,8 @@ p {
     width:100%;
     align-items:center}
 
+.preset { break-inside: avoid; }
+
 .preset:hover {
     border-color:#93b5ef}
 
@@ -221,7 +223,7 @@ p {
     height:min(64vh,600px);
     min-height:400px;
     position:relative;
-    background:radial-gradient(circle at 50% 40%,#fff 0%,#dce8fa 54%,#b9cce7 100%)}
+    background:linear-gradient(155deg,#f9f3e9 0%,#e8edf7 70%,#d7e5f6 100%)}
 
 #scene {
     position:absolute;
@@ -450,6 +452,23 @@ p {
     margin-top:23px}
 
 
+/* Keep all dashboard cards naturally sized. Only the therapy list scrolls. */
+@media (min-width:1121px) {
+  .layout { align-items: start; }
+  .layout > aside.card { display: block; height: auto; overflow: visible; }
+  .layout > aside.card .presetlist {
+    height: auto;
+    max-height: min(68vh, 650px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    align-content: start;
+    padding-bottom: 8px;
+    scroll-padding-bottom: 12px;
+  }
+  .layout > .right > .card { height: auto; }
+}
+
 @media(max-width:1120px) {
     .layout {
     grid-template-columns:minmax(245px,1fr) minmax(330px,1.6fr)}
@@ -670,6 +689,62 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
 }
 
 
+
+/* Confirmation dialog: fixed to the VIEWPORT, not the page content. */
+.fc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(13, 34, 71, .58);
+  backdrop-filter: blur(5px);
+  overflow-y: auto;
+}
+.fc-modal-backdrop[hidden] { display: none !important; }
+.fc-modal {
+  width: min(100%, 430px);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 30px;
+  border-radius: 22px;
+  background: #fffcf7;
+  border: 1px solid #f0ddc7;
+  box-shadow: 0 25px 90px rgba(12, 32, 65, .28);
+  text-align: center;
+}
+.fc-modal-symbol {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff0dc;
+  color: #e76c27;
+  font-size: 30px;
+  font-weight: 800;
+}
+.fc-modal h2 { margin: 0 0 10px; font-size: 23px; color: #17396f; }
+.fc-modal p { margin: 0 0 25px; font-size: 14px; color: #65728a; }
+.fc-modal-actions { display: flex; gap: 10px; justify-content: center; }
+.fc-modal-actions button {
+  flex: 1;
+  min-height: 45px;
+  border-radius: 11px;
+  font-weight: 750;
+  border: 1px solid #d7dfec;
+}
+.fc-modal-cancel { color: #17396f; background: #fff; }
+.fc-modal-confirm { color: #fff; background: #f47735; border-color: #f47735 !important; }
+@media (max-width: 420px) {
+  .fc-modal { padding: 22px; }
+  .fc-modal-actions { flex-direction: column-reverse; }
+}
+
 </style>
   <script type="importmap">
    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}
@@ -712,11 +787,6 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       THERAPY COMMAND CENTER
      </div>
     </div>
-    <div class="topright">
-     <span class="pill">
-      ● VISUAL PROTOTYPE
-     </span>
-    </div>
    </header>
    <section class="welcome">
     <div>
@@ -730,9 +800,6 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       Select an available preset, explore its target region, and adjust comfort settings within the defined limits.
      </p>
     </div>
-    <span class="pill" id="sessionBadge">
-     Session idle
-    </span>
    </section>
    <main class="layout">
     <aside class="card">
@@ -752,9 +819,6 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         <h2>
          3D Therapy Visualization
         </h2>
-        <span class="small" id="regionLabel">
-         Full-body view · Breathing idle
-        </span>
        </div>
        <span class="tag cool" id="modeTag">
         COOLING
@@ -764,9 +828,6 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
        <div class="platform">
        </div>
        <div id="scene">
-       </div>
-       <div class="viewerhint">
-        Drag to rotate · Scroll to zoom · Select a preset to focus
        </div>
   <div id="modelLoading" role="status" aria-live="polite">
     <div class="fc-loader">
@@ -821,22 +882,18 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
      </div>
      <div class="card">
       <h2>
-       Live Device Readings
+       Demo Session Readings
       </h2>
       <p class="small">
-       Hardware telemetry is not connected in this visual prototype.
+       Simulated values only — no sensors or therapy hardware connected.
       </p>
       <div class="readings">
        <div class="reading">
         <span>
          Water temperature
         </span>
-        <strong>
-         — °C
-        </strong>
-        <span>
-         Sensor offline
-        </span>
+        <strong id="waterReading" aria-live="off">26.0 °C</strong>
+        <span id="waterReadingLabel">Simulated starting temperature</span>
        </div>
        <div class="reading">
         <span>
@@ -853,12 +910,8 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         <span>
          Time remaining
         </span>
-        <strong>
-         —:—
-        </strong>
-        <span>
-         No live session
-        </span>
+        <strong id="timeReading" aria-live="off">—:—</strong>
+        <span id="timeReadingLabel">Select a preset to begin</span>
        </div>
       </div>
      </div>
@@ -906,6 +959,15 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         —
        </span>
       </div>
+      <div class="fieldlabel">
+       <label for="durationSlider">Session duration</label>
+       <span id="durationLimits">—</span>
+      </div>
+      <input class="range" disabled id="durationSlider" step="1" type="range" aria-label="Session duration in minutes"/>
+      <div class="bounds">
+       <span id="minDuration">—</span>
+       <span id="maxDuration">—</span>
+      </div>
       <div class="setting">
        <div>
         <p>
@@ -917,69 +979,21 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
        </div>
        <div style="margin-left:auto;text-align:right">
         <p>
-         Preset duration
+         Selected duration
         </p>
         <strong id="durationValue" style="font-size:17px">
          —
         </strong>
        </div>
       </div>
-      <button class="btn" id="startBtn" type="button">
-       Preview Session
-      </button>
-      <button class="btn secondary" disabled="" id="stopBtn" type="button">
-       Stop Preview
-      </button>
+      <div class="demo-controls">
+        <div class="demo-actions">
+          <button class="btn" id="startBtn" type="button">Start Demo</button>
+        </div>
+        <button class="btn secondary" disabled id="stopBtn" type="button">Stop Demo</button>
+      </div>
       <p class="feedback" id="feedback" role="status">
       </p>
-      <div class="notice">
-       Prototype only: Preview Session changes the interface, not physical hardware. Temperature limits are reference values from the uploaded therapy guide, not independently validated device safety limits.
-      </div>
-     </section>
-     <section class="card">
-      <h2>
-       System Status
-      </h2>
-      <div class="rowline">
-       <span>
-        LCD / API
-       </span>
-       <strong>
-        Not connected
-       </strong>
-      </div>
-      <div class="rowline">
-       <span>
-        ESP32 controller
-       </span>
-       <strong>
-        Not connected
-       </strong>
-      </div>
-      <div class="rowline">
-       <span>
-        Pump / TEC / Fan
-       </span>
-       <strong>
-        Unknown
-       </strong>
-      </div>
-      <div class="rowline">
-       <span>
-        3D animation
-       </span>
-       <strong id="animationStatus">
-        Loading…
-       </strong>
-      </div>
-      <div class="rowline">
-       <span>
-        Session state
-       </span>
-       <strong id="sessionState">
-        Idle
-       </strong>
-      </div>
      </section>
     </div>
    </main>
@@ -997,21 +1011,32 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     </a>
    </section>
    <footer class="foot">
-    FAHRENCOOL · Therapy Dashboard · Interface demonstration only
+    FAHRENCOOL · Interactive demo · No physical hardware connected
    </footer>
+  </div>
+
+  <div class="fc-modal-backdrop" id="confirmationBackdrop" hidden>
+    <div class="fc-modal" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle" aria-describedby="confirmationMessage">
+      <div class="fc-modal-symbol" aria-hidden="true">!</div>
+      <h2 id="confirmationTitle">Switch therapy preset?</h2>
+      <p id="confirmationMessage">The current demo will stop if you switch presets.</p>
+      <div class="fc-modal-actions">
+        <button class="fc-modal-cancel" id="confirmationCancel" type="button">Keep current</button>
+        <button class="fc-modal-confirm" id="confirmationAccept" type="button">Switch preset</button>
+      </div>
+    </div>
   </div>
   <script type="module">
     import * as THREE from 'three';
     import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { REGIONS } from './data/bodyRegions.js';
     import { THERAPY_PRESETS } from './data/therapyPresets.js';
-    import { FRONT_DIRECTION, SKIN_HEX } from './config/modelConfig.js';
-    import { CAMERA_PRESETS } from './config/cameraConfig.js';
+    import { FRONT_DIRECTION, SKIN_HEX, CLINIC_MODEL_URL, RUG_NAME } from './config/modelConfig.js';
     
-    // Same character pipeline as bodyChart.html: walking.fbx provides the rigged
-    // human; breathing.fbx provides the idle animation. Neither the clinic nor
-    // scene.gltf is needed on the dashboard.
+    // Keep the Body Chart's animated character pipeline, with a lightweight
+    // simplified clinic environment for the dashboard.
     const HUMAN_URL = './assets/walking.fbx';
     const IDLE_URL = './assets/breathing.fbx';
     const MODEL_HEIGHT = 1.7;
@@ -1088,8 +1113,130 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     const fill = new THREE.DirectionalLight(0xb5caff, 0.35);
     fill.position.set(-3, 3, -4);
     scene.add(fill);
-    
-    const clock = new THREE.Clock();
+
+    // BODY CHART HOSPITAL: same imported GLB, arrangement and relative scale.
+    // Only the human rotates; the camera keeps looking into the clinic.
+    const clinicGroup = new THREE.Group();
+    scene.add(clinicGroup);
+    const CLINIC_MOTION = {
+      enabled: true,
+      rotationSpeed: 0.28,
+      rotationDegrees: 0.65,
+      horizontalMovement: 0.008,
+      smoothness: 0.045
+    };
+    let clinicTime = 0;
+
+    function recolorClinicFurniture(clinicModel) {
+      const recolored = new Map();
+      clinicModel.traverse(object => {
+        if (!object.isMesh || !object.material) return;
+        let path = '';
+        for (let node = object; node && node !== clinicModel; node = node.parent) {
+          path += ' ' + (node.name || '').toLowerCase();
+        }
+        if (/floor|ground|wall|ceiling|window|glass|rug|carpet|screen|monitor/.test(path)) return;
+        const recolor = material => {
+          if (!material?.color) return material;
+          if (recolored.has(material.uuid)) return recolored.get(material.uuid);
+          const hsl = { h: 0, s: 0, l: 0 };
+          material.color.getHSL(hsl);
+          const label = path + ' ' + (material.name || '').toLowerCase();
+          if (!(hsl.h >= 0.43 && hsl.h <= 0.57 && hsl.s > 0.10) ||
+              !/chair|stool|seat|cushion|pillow|bench|bed|table|upholster|padding|backrest|support|column|pole/.test(label)) return material;
+          const copy = material.clone();
+          copy.color.setHex(/cushion|pillow|padding/.test(label) ? 0x89b5e8 :
+            /support|column|pole/.test(label) ? 0x668dbd : 0x315f9c);
+          recolored.set(material.uuid, copy);
+          return copy;
+        };
+        object.material = Array.isArray(object.material) ? object.material.map(recolor) : recolor(object.material);
+      });
+    }
+
+    async function loadClinic() {
+      try {
+        const gltf = await new GLTFLoader().loadAsync(CLINIC_MODEL_URL);
+        const model = gltf.scene;
+        clinicGroup.add(model);
+        // Remove the hospital rug so it cannot cover the model's ankles.
+        // Hide the named rug node (including all its child meshes), while
+        // retaining the hospital floor and the rest of the furniture.
+        const rugNames = [RUG_NAME, 'rug', 'carpet', 'floor-mat', 'floor_mat'];
+        let hiddenRugCount = 0;
+        model.traverse(object => {
+          const name = (object.name || '').toLowerCase();
+          if (rugNames.some(term => term && name.includes(term.toLowerCase()))) {
+            object.visible = false;
+            hiddenRugCount++;
+          }
+        });
+        if (!hiddenRugCount) console.warn('Clinic rug was not found by name; check the GLB node names.');
+        recolorClinicFurniture(model);
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const H = MODEL_HEIGHT;
+        const scale = Math.min(
+          H * 2.45 / Math.max(size.y, 0.001),
+          H * 3.9 / Math.max(size.x, 0.001),
+          H * 2.8 / Math.max(size.z, 0.001)
+        );
+        model.scale.setScalar(scale);
+        model.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale - H * 0.78);
+        model.updateMatrixWorld(true);
+      } catch (error) {
+        console.warn('Hospital background could not load; human viewer remains usable.', error);
+      }
+    }
+
+    function animateClinic(dt) {
+      if (reducedMotion.matches || !CLINIC_MOTION.enabled) {
+        clinicGroup.rotation.y = 0;
+        clinicGroup.position.x = 0;
+        return;
+      }
+      clinicTime += dt;
+      const wave = Math.sin(clinicTime * CLINIC_MOTION.rotationSpeed);
+      const smooth = 1 - Math.pow(1 - CLINIC_MOTION.smoothness, dt * 60);
+      clinicGroup.rotation.y = THREE.MathUtils.lerp(
+        clinicGroup.rotation.y,
+        wave * THREE.MathUtils.degToRad(CLINIC_MOTION.rotationDegrees),
+        smooth
+      );
+      clinicGroup.position.x = THREE.MathUtils.lerp(
+        clinicGroup.position.x,
+        -wave * MODEL_HEIGHT * CLINIC_MOTION.horizontalMovement,
+        smooth
+      );
+    }
+
+    // Drag rotates the patient, never the camera or clinic.
+    controls.enableRotate = false;
+    controls.enablePan = false;
+    let draggingHuman = false;
+    let lastPointerX = 0;
+    renderer.domElement.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      draggingHuman = true;
+      lastPointerX = event.clientX;
+      orbitTransition = null;
+      cameraMoving = false;
+      renderer.domElement.setPointerCapture(event.pointerId);
+    });
+    renderer.domElement.addEventListener('pointermove', event => {
+      if (!draggingHuman) return;
+      const dx = event.clientX - lastPointerX;
+      lastPointerX = event.clientX;
+      bodyRoot.rotation.y += dx * 0.008;
+      desiredBodyYaw = bodyRoot.rotation.y;
+    });
+    const endHumanDrag = () => { draggingHuman = false; };
+    renderer.domElement.addEventListener('pointerup', endHumanDrag);
+    renderer.domElement.addEventListener('pointercancel', endHumanDrag);
+    let desiredBodyYaw = 0;
+
     const cameraGoal = new THREE.Vector3();
     const targetGoal = new THREE.Vector3();
     const highlightColor = new THREE.Color(0x7187d9);
@@ -1256,6 +1403,28 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       highlightUniforms.uRegionStrength.value = 0.98;
       highlightColor.set(selected?.mode === 'HEAT' ? 0xff902f : 0x7187d9);
     }
+    
+    // CAMERA FRAMING SETTINGS
+    // Edit these values to center each body region independently.
+    // offsetX: horizontal target adjustment (model-width units)
+    // offsetY: vertical target adjustment (model-height units)
+    // distance: camera distance (model-height units); smaller = closer
+    // cameraX / cameraY: optional camera-only offsets, without moving its target
+    //
+    // Positive X follows the model's world X axis; the apparent direction
+    // reverses when viewing the back.
+    const CAMERA_PRESETS = {
+      neck:      { offsetX: 0.00, offsetY: 0.00, distance: 0.52 },
+      shoulder:  { offsetX: 0.00, offsetY: 0.00, distance: 0.65 },
+      elbow:     { offsetX: 0.00, offsetY: 0.00, distance: 1.10 },
+      thigh:     { offsetX: 0.00, offsetY: 0.00, distance: 0.75 },
+      knee:      { offsetX: 0.00, offsetY: 0.00, distance: 0.60 },
+      upperBack: { offsetX: 0.00, offsetY: 0.00, distance: 0.80 },
+      lowerBack: { offsetX: 0.00, offsetY: 0.00, distance: 0.72 },
+      hip:       { offsetX: 0.00, offsetY: 0.00, distance: 0.72 },
+      calf:      { offsetX: 0.00, offsetY: 0.00, distance: 0.68 },
+      ankle:     { offsetX: 0.00, offsetY: 0.00, distance: 0.60 }
+    };
 
     // Rotate around the body instead of interpolating THROUGH it.
     // The camera keeps a safe radius and a shallow vertical angle.
@@ -1342,9 +1511,10 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
 
       const size = bounds.getSize(new THREE.Vector3());
       const center = bounds.getCenter(new THREE.Vector3());
-      const sign = region.view === 'back'
-        ? -FRONT_DIRECTION
-        : FRONT_DIRECTION;
+      const backView = region.view === 'back';
+      desiredBodyYaw = backView ? Math.PI : 0;
+      // Choose the nearest equivalent rotation to avoid unnecessary spins.
+      desiredBodyYaw += Math.round((bodyRoot.rotation.y - desiredBodyYaw) / (2 * Math.PI)) * 2 * Math.PI;
 
       // Camera framing is independent of the highlight position.
       // Center the human body's midline for ALL regions, including
@@ -1365,14 +1535,14 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       cameraGoal.set(
         targetGoal.x + (settings.cameraX || 0) * size.x,
         targetGoal.y + (settings.cameraY || 0) * size.y,
-        center.z + sign * Math.max(size.y * settings.distance, 0.35)
+        center.z + FRONT_DIRECTION * Math.max(size.y * settings.distance, 0.35)
       );
 
       beginCameraTransition(instant);
+      if (instant) bodyRoot.rotation.y = desiredBodyYaw;
 
       // Highlight geometry remains controlled by bodyRegions.js.
       setRegion(regionKey);
-      $('regionLabel').textContent = `${region.name} · ${region.view} view`;
       $('viewerText').textContent = `Selected: ${selected.name}`;
     }
 
@@ -1387,8 +1557,9 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         center.z + FRONT_DIRECTION * size.y * 1.85
       );
       beginCameraTransition(instant);
-      highlightUniforms.uRegionStrength.value = 0;
-      $('regionLabel').textContent = 'Full-body view · Breathing idle';
+      desiredBodyYaw = Math.round(bodyRoot.rotation.y / (2 * Math.PI)) * 2 * Math.PI;
+      if (instant) bodyRoot.rotation.y = desiredBodyYaw;
+      // Reset camera only. Keep the selected region highlighted.
     }
     
     function updateTemperature() {
@@ -1397,18 +1568,181 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       $('targetReading').textContent = `${value} °C`;
     }
     
-    function stopPreview() {
+    // Demo simulation: all values are generated locally, never from sensors.
+    // Keep simulation parameters here, independent of therapy reference data.
+    const DEMO_CONFIG = {
+      ambientCelsius: 26,
+      thermalTimeConstantSeconds: 100, // simulated time to approach setpoint
+      tickMilliseconds: 200
+    };
+    let demoSecondsElapsed = 0;
+    let demoDurationSeconds = 0;
+    let demoTemperature = DEMO_CONFIG.ambientCelsius;
+    let demoTimer = null;
+    let demoLastTick = 0;
+
+    function durationMinutesRange(value) {
+      // E.g. "10–15 min" -> [10, 15]. Keep original reference data unchanged.
+      const minutes = String(value).match(/\d+(?:\.\d+)?/g)?.map(Number) || [];
+      const min = Math.max(1, Math.floor(minutes[0] ?? 10));
+      const max = Math.max(min, Math.floor(minutes[1] ?? min));
+      return [min, max];
+    }
+
+    function updateDuration() {
+      const minutes = Number($('durationSlider').value);
+      $('durationValue').textContent = `${minutes} min`;
+      demoDurationSeconds = minutes * 60;
+      // If changed mid-session, retain elapsed time and recompute remaining time.
+      if (preview && demoSecondsElapsed >= demoDurationSeconds) {
+        finishDemo();
+      } else {
+        updateDemoDisplay();
+      }
+    }
+
+    function clockText(seconds) {
+      const total = Math.max(0, Math.ceil(seconds));
+      return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+    }
+
+    function updateDemoDisplay() {
+      const remaining = Math.max(0, demoDurationSeconds - demoSecondsElapsed);
+      $('waterReading').textContent = `${demoTemperature.toFixed(1)} °C`;
+      $('timeReading').textContent = clockText(remaining);
+      $('waterReadingLabel').textContent = 'Simulated water temperature';
+      $('timeReadingLabel').textContent = preview ? 'Demo time remaining' : 'Selected preset duration';
+    }
+
+    function stopDemoClock() {
+      if (demoTimer !== null) {
+        clearInterval(demoTimer);
+        demoTimer = null;
+      }
+    }
+
+    function resetDemoForPreset() {
+      stopDemoClock();
       preview = false;
-      $('sessionState').textContent = 'Idle';
-      $('sessionBadge').textContent = 'Session idle';
+      demoSecondsElapsed = 0;
+      demoDurationSeconds = selected ? Number($('durationSlider').value) * 60 : 0;
+      demoTemperature = DEMO_CONFIG.ambientCelsius;
+      $('startBtn').textContent = 'Start Demo';
+      $('startBtn').disabled = !selected;
+      $('stopBtn').disabled = true;
+      $('tempSlider').disabled = !selected;
+      $('durationSlider').disabled = !selected;
+      updateDemoDisplay();
+    }
+
+    function stopPreview(reason = 'Demo stopped. No physical device was affected.') {
+      resetDemoForPreset();
+      $('feedback').textContent = reason;
+    }
+
+    function finishDemo() {
+      stopDemoClock();
+      preview = false;
+      demoSecondsElapsed = demoDurationSeconds;
+      $('startBtn').textContent = 'Restart Demo';
       $('startBtn').disabled = false;
       $('stopBtn').disabled = true;
-      $('feedback').textContent = 'Preview cancelled. No physical device was affected.';
+      $('tempSlider').disabled = false;
+      $('durationSlider').disabled = false;
+      $('feedback').textContent = 'Demo finished. Simulated values only — no hardware was controlled.';
+      updateDemoDisplay();
     }
-    
-    function selectPreset(preset) {
+
+    function tickDemo() {
+      if (!preview || !selected) return;
+      const now = performance.now();
+      const elapsedRealSeconds = Math.min((now - demoLastTick) / 1000, 2);
+      demoLastTick = now;
+      const simulatedDelta = elapsedRealSeconds; // Real-time simulation only
+      const remaining = Math.max(0, demoDurationSeconds - demoSecondsElapsed);
+      const step = Math.min(simulatedDelta, remaining);
+      demoSecondsElapsed += step;
+
+      // Exponential thermal response: approaches the user-selected target
+      // smoothly without ever instantly jumping to it.
+      const target = Number($('tempSlider').value);
+      const blend = 1 - Math.exp(-step / DEMO_CONFIG.thermalTimeConstantSeconds);
+      demoTemperature += (target - demoTemperature) * blend;
+      if (Math.abs(demoTemperature - target) < 0.05) demoTemperature = target;
+      updateDemoDisplay();
+      if (demoSecondsElapsed >= demoDurationSeconds) finishDemo();
+    }
+
+    function startDemo() {
+      if (!selected || preview) return;
+      resetDemoForPreset();
+      preview = true;
+      demoLastTick = performance.now();
+      $('startBtn').disabled = true;
+      $('stopBtn').disabled = false;
+      $('tempSlider').disabled = false; // allows target changes during demo
+      $('durationSlider').disabled = false; // allows duration changes during demo
+      $('feedback').textContent = 'Demo running: simulated temperature and countdown. No device is connected.';
+      demoTimer = setInterval(tickDemo, DEMO_CONFIG.tickMilliseconds);
+      updateDemoDisplay();
+    }
+
+
+    // Reusable in-page confirmation modal; no browser confirm() popups.
+    let pendingConfirmation = null;
+    function askConfirmation({ title, message, confirmLabel = 'Confirm' }) {
+      return new Promise(resolve => {
+        const backdrop = $('confirmationBackdrop');
+        const cancel = $('confirmationCancel');
+        const accept = $('confirmationAccept');
+        const previousFocus = document.activeElement;
+        if (pendingConfirmation) pendingConfirmation(false);
+        $('confirmationTitle').textContent = title;
+        $('confirmationMessage').textContent = message;
+        accept.textContent = confirmLabel;
+        backdrop.hidden = false;
+        const finish = answer => {
+          if (pendingConfirmation !== finish) return;
+          pendingConfirmation = null;
+          backdrop.hidden = true;
+          cancel.removeEventListener('click', onCancel);
+          accept.removeEventListener('click', onAccept);
+          backdrop.removeEventListener('click', onBackdrop);
+          document.removeEventListener('keydown', onKey);
+          if (previousFocus?.isConnected) previousFocus.focus();
+          resolve(answer);
+        };
+        pendingConfirmation = finish;
+        const onCancel = () => finish(false);
+        const onAccept = () => finish(true);
+        const onBackdrop = event => { if (event.target === backdrop) finish(false); };
+        const onKey = event => {
+          if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+          if (event.key === 'Tab') {
+            const first = cancel, last = accept;
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault(); first.focus();
+            }
+          }
+        };
+        cancel.addEventListener('click', onCancel);
+        accept.addEventListener('click', onAccept);
+        backdrop.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKey);
+        cancel.focus();
+      });
+    }
+
+    async function selectPreset(preset) {
       if (preview && selected !== preset) {
-        if (!confirm('Cancel the current session preview and switch presets?')) return;
+        const confirmed = await askConfirmation({
+          title: 'Switch therapy preset?',
+          message: `Your current demo will stop. Switch to “${preset.name}”?`,
+          confirmLabel: 'Switch preset'
+        });
+        if (!confirmed) return;
         stopPreview();
       }
       selected = preset;
@@ -1428,7 +1762,16 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       $('minTemp').textContent = `${min} °C`;
       $('maxTemp').textContent = `${max} °C`;
       $('tempLimits').textContent = `${min}–${max} °C`;
-      $('durationValue').textContent = preset.duration;
+      const [minMinutes, maxMinutes] = durationMinutesRange(preset.duration);
+      const durationSlider = $('durationSlider');
+      durationSlider.disabled = false;
+      durationSlider.min = minMinutes;
+      durationSlider.max = maxMinutes;
+      durationSlider.step = 1;
+      durationSlider.value = minMinutes;
+      $('minDuration').textContent = `${minMinutes} min`;
+      $('maxDuration').textContent = `${maxMinutes} min`;
+      $('durationLimits').textContent = `${minMinutes}–${maxMinutes} min`;
       updateTemperature();
     
       document.querySelectorAll('.preset').forEach(button => {
@@ -1437,7 +1780,9 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         button.setAttribute('aria-pressed', String(active));
       });
       if (human && mixer) focusRegion(preset.region);
-      $('feedback').textContent = 'Preset ready. Temperature is limited to its reference range.';
+      resetDemoForPreset();
+      updateDuration();
+      $('feedback').textContent = 'Preset ready. Start the demo to simulate temperature and time.';
     }
     
     const list = $('presetList');
@@ -1459,29 +1804,32 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       list.appendChild(button);
     });
     
-    $('tempSlider').addEventListener('input', updateTemperature);
-    $('resetView').addEventListener('click', () => resetView());
-    $('startBtn').addEventListener('click', () => {
-      if (!selected || preview) return;
-      preview = true;
-      $('sessionState').textContent = 'Preview only';
-      $('sessionBadge').textContent = 'Preview active';
-      $('startBtn').disabled = true;
-      $('stopBtn').disabled = false;
-      $('feedback').textContent = 'Visual preview only. No hardware command was sent.';
+    $('tempSlider').addEventListener('input', () => {
+      updateTemperature();
+      if (preview) $('feedback').textContent = 'Target adjusted. Simulated water temperature will gradually follow.';
     });
-    $('stopBtn').addEventListener('click', () => {
+    $('durationSlider').addEventListener('input', () => {
+      updateDuration();
+      if (preview) $('feedback').textContent = 'Session duration updated. Countdown adjusted.';
+    });
+    $('resetView').addEventListener('click', () => resetView());
+    $('startBtn').addEventListener('click', startDemo);
+    $('stopBtn').addEventListener('click', async () => {
       if (!preview) return;
-      if (confirm('Are you sure you want to cancel the current therapy preset preview?')) {
-        stopPreview();
-      }
+      const confirmed = await askConfirmation({
+        title: 'Stop demo session?',
+        message: 'The current timer and simulated temperature will reset.',
+        confirmLabel: 'Stop demo'
+      });
+      if (confirmed) stopPreview();
     });
     $('startBtn').disabled = true;
-    if (presets.length) {
-      selectPreset(presets[0]);
-      $('startBtn').disabled = false;
-    }
-    
+    if (presets.length) selectPreset(presets[0]);
+    document.addEventListener('visibilitychange', () => {
+      // Do not skip minutes of demo time while the tab is hidden.
+      demoLastTick = performance.now();
+    });
+
     function resizeViewer() {
       const container = $('scene');
       const width = container.clientWidth;
@@ -1544,7 +1892,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
 
         // Reset to full body AFTER the animation has settled.
         resetView(true);
-        $('animationStatus').textContent = 'Breathing loop';
+
         $('viewerText').textContent = 'Model ready · Select a preset to focus';
         // Render the first frame before revealing the dashboard.
         requestAnimationFrame(() => {
@@ -1559,7 +1907,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         // Never leave the full-screen loader trapping the user on failure.
         $('modelLoading').classList.add('hidden');
         console.error('FahrenCool 3D load error:', error);
-        $('animationStatus').textContent = 'Load failed';
+
         $('viewerText').textContent = '3D loading failed — check the browser console and assets/ paths.';
         $('feedback').textContent = '3D model unavailable. The dashboard controls remain accessible.';
 
@@ -1615,12 +1963,18 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
           ? 0.8
           : 0.68 + 0.32 * Math.sin(elapsed * 2.6);
       }
+      if (!draggingHuman) {
+        const turnBlend = 1 - Math.exp(-dt * 5);
+        bodyRoot.rotation.y += (desiredBodyYaw - bodyRoot.rotation.y) * turnBlend;
+      }
+      animateClinic(dt);
       controls.update();
       renderer.render(scene, camera);
     }
     
     resizeViewer();
     requestAnimationFrame(animate);
+    loadClinic();
     loadCharacter();
   </script>
  </body>
