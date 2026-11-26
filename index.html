@@ -992,7 +992,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       Learn about body regions and hot/cold therapy. Educational selections do not control this dashboard.
      </p>
     </div>
-    <a href="./bodyChart.html">
+    <a href="./bodyChart/bodyChart.html">
      Open Body Chart ↗
     </a>
    </section>
@@ -1007,6 +1007,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     import { REGIONS } from './data/bodyRegions.js';
     import { THERAPY_PRESETS } from './data/therapyPresets.js';
     import { FRONT_DIRECTION, SKIN_HEX } from './config/modelConfig.js';
+    import { CAMERA_PRESETS } from './config/cameraConfig.js';
     
     // Same character pipeline as bodyChart.html: walking.fbx provides the rigged
     // human; breathing.fbx provides the idle animation. Neither the clinic nor
@@ -1051,6 +1052,8 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     let bounds = null;
     let currentRegion = null;
     let cameraMoving = false;
+    let orbitTransition = null;
+    const orbitTarget = new THREE.Vector3();
     let frameHandle = 0;
     
     const scene = new THREE.Scene();
@@ -1072,6 +1075,10 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     controls.enablePan = false;
     controls.minDistance = 0.42;
     controls.maxDistance = 5;
+    controls.addEventListener('start', () => {
+      orbitTransition = null;
+      cameraMoving = false;
+    });
     
     const hemisphere = new THREE.HemisphereLight(0xffffff, 0x7c8fae, 1.5);
     scene.add(hemisphere);
@@ -1249,35 +1256,126 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       highlightUniforms.uRegionStrength.value = 0.98;
       highlightColor.set(selected?.mode === 'HEAT' ? 0xff902f : 0x7187d9);
     }
-    
-    function focusRegion(regionKey, instant = false) {
-      if (!bounds) return;
-      const region = REGIONS[regionKey];
-      if (!region) return;
-      const size = bounds.getSize(new THREE.Vector3());
-      const center = bounds.getCenter(new THREE.Vector3());
-      const sign = region.view === 'back' ? -FRONT_DIRECTION : FRONT_DIRECTION;
-      // Keep the camera facing the requested side while the character breathes.
-      // Region coordinates are defined relative to the normalized standing model.
-      const x = center.x + region.x * size.x * 0.5;
-      const y = bounds.min.y + region.y * size.y;
-      targetGoal.set(x, y, center.z);
-      cameraGoal.set(
-        x + size.x * 0.12,
-        y + size.y * 0.045,
-        center.z + sign * Math.max(size.y * 0.62, 0.85)
-      );
+
+    // Rotate around the body instead of interpolating THROUGH it.
+    // The camera keeps a safe radius and a shallow vertical angle.
+    function beginCameraTransition(instant = false) {
       if (instant) {
+        orbitTransition = null;
+        cameraMoving = false;
         camera.position.copy(cameraGoal);
         controls.target.copy(targetGoal);
-      } else {
-        cameraMoving = true;
+        controls.update();
+        return;
       }
+
+      const fromTarget = controls.target.clone();
+      const fromOffset = camera.position.clone().sub(fromTarget);
+      const toOffset = cameraGoal.clone().sub(targetGoal);
+      const fromYaw = Math.atan2(fromOffset.x, fromOffset.z);
+      const toYaw = Math.atan2(toOffset.x, toOffset.z);
+      let yawDelta = Math.atan2(Math.sin(toYaw - fromYaw), Math.cos(toYaw - fromYaw));
+
+      // For an exact 180-degree turn, consistently rotate in one direction.
+      if (Math.abs(Math.abs(yawDelta) - Math.PI) < 0.0001) {
+        yawDelta = Math.PI;
+      }
+
+      const fromRadius = Math.max(0.01, Math.hypot(fromOffset.x, fromOffset.z));
+      const toRadius = Math.max(0.01, Math.hypot(toOffset.x, toOffset.z));
+      const fromElevation = Math.atan2(fromOffset.y, fromRadius);
+      const toElevation = Math.atan2(toOffset.y, toRadius);
+
+      orbitTransition = {
+        elapsed: 0,
+        duration: Math.abs(yawDelta) > 1.5 ? 1.15 : 0.65,
+        fromTarget,
+        toTarget: targetGoal.clone(),
+        fromYaw,
+        yawDelta,
+        fromRadius,
+        toRadius,
+        fromElevation,
+        toElevation
+      };
+      cameraMoving = true;
+    }
+
+    function updateCameraTransition(dt) {
+      if (!orbitTransition) return;
+      const t = orbitTransition;
+      t.elapsed = Math.min(t.elapsed + dt, t.duration);
+      const u = t.elapsed / t.duration;
+      const eased = u * u * (3 - 2 * u);
+
+      orbitTarget.copy(t.fromTarget).lerp(t.toTarget, eased);
+      const yaw = t.fromYaw + t.yawDelta * eased;
+      const radius = THREE.MathUtils.lerp(t.fromRadius, t.toRadius, eased);
+      const elevation = THREE.MathUtils.lerp(t.fromElevation, t.toElevation, eased);
+
+      camera.position.set(
+        orbitTarget.x + Math.sin(yaw) * radius,
+        orbitTarget.y + Math.tan(elevation) * radius,
+        orbitTarget.z + Math.cos(yaw) * radius
+      );
+      controls.target.copy(orbitTarget);
+
+      if (u >= 1) {
+        camera.position.copy(cameraGoal);
+        controls.target.copy(targetGoal);
+        orbitTransition = null;
+        cameraMoving = false;
+      }
+    }
+
+    function focusRegion(regionKey, instant = false) {
+      if (!bounds) return;
+
+      const region = REGIONS[regionKey];
+      if (!region) return;
+
+      const settings = CAMERA_PRESETS[regionKey] || {
+        offsetX: 0,
+        offsetY: 0,
+        distance: 0.65
+      };
+
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const sign = region.view === 'back'
+        ? -FRONT_DIRECTION
+        : FRONT_DIRECTION;
+
+      // Camera framing is independent of the highlight position.
+      // Center the human body's midline for ALL regions, including
+      // bilateral ones (shoulders, elbows, thighs, knees, hips, calves,
+      // and ankles). REGIONS[regionKey].x is only for highlighting.
+      const bodyCenterX = center.x;
+      const regionHeight = bounds.min.y + region.y * size.y;
+
+      // Offset controls are optional manual framing adjustments.
+      // Leave offsetX at zero to keep both sides evenly visible.
+      targetGoal.set(
+        bodyCenterX + (settings.offsetX || 0) * size.x,
+        regionHeight + (settings.offsetY || 0) * size.y,
+        center.z
+      );
+
+      // Place the camera relative to that target.
+      cameraGoal.set(
+        targetGoal.x + (settings.cameraX || 0) * size.x,
+        targetGoal.y + (settings.cameraY || 0) * size.y,
+        center.z + sign * Math.max(size.y * settings.distance, 0.35)
+      );
+
+      beginCameraTransition(instant);
+
+      // Highlight geometry remains controlled by bodyRegions.js.
       setRegion(regionKey);
       $('regionLabel').textContent = `${region.name} · ${region.view} view`;
       $('viewerText').textContent = `Selected: ${selected.name}`;
     }
-    
+
     function resetView(instant = false) {
       if (!bounds) return;
       const size = bounds.getSize(new THREE.Vector3());
@@ -1288,12 +1386,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         bounds.min.y + size.y * 0.54,
         center.z + FRONT_DIRECTION * size.y * 1.85
       );
-      if (instant) {
-        camera.position.copy(cameraGoal);
-        controls.target.copy(targetGoal);
-      } else {
-        cameraMoving = true;
-      }
+      beginCameraTransition(instant);
       highlightUniforms.uRegionStrength.value = 0;
       $('regionLabel').textContent = 'Full-body view · Breathing idle';
     }
@@ -1515,13 +1608,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         groundCharacter(dt);
       }
       if (cameraMoving) {
-        const smooth = 1 - Math.exp(-5 * dt);
-        camera.position.lerp(cameraGoal, smooth);
-        controls.target.lerp(targetGoal, smooth);
-        if (camera.position.distanceTo(cameraGoal) < 0.003 &&
-            controls.target.distanceTo(targetGoal) < 0.003) {
-          cameraMoving = false;
-        }
+        updateCameraTransition(dt);
       }
       if (currentRegion && highlightUniforms.uRegionStrength.value > 0) {
         highlightUniforms.uPulse.value = reducedMotion.matches
