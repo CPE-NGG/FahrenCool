@@ -1241,7 +1241,10 @@ function navigateWithLoading() {
   exitNavigating = true;
   loading.classList.remove("hidden", "failed");
   loading.setAttribute("aria-label", "Returning to dashboard");
-  // Show the existing animated loading screen before changing pages.
+  // The destination index.html shows the exact same full-screen loader
+  // from its initial HTML paint, until its 3D scene is ready.
+  // sessionStorage is per-tab and never affects the therapy preset.
+  try { sessionStorage.setItem('fahrencool-returning-to-dashboard', '1'); sessionStorage.setItem('fahrencool-loader-start', String(Date.now())); } catch (_) {}
   setTimeout(() => window.location.assign(MAIN_PAGE_URL), 650);
 }
 

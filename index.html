@@ -1,104 +1,1540 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f4f8f8">
-<title>FahrenCool | Therapy Dashboard</title>
-<link rel="icon" type="image/x-icon" href="./favicon.ico">
-<style>
-:root{--orange:#f08b46;--teal:#0b9b92;--deep:#173c45;--muted:#68848b;--line:#deebeb;--bg:#f3f7f7;--card:#fff;--shadow:0 12px 30px rgba(28,63,69,.06)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--deep)}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.46;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #67cfc5;outline-offset:3px}a{color:inherit;text-decoration:none}
-.shell{max-width:1380px;margin:auto;padding:24px 28px 48px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:8px 0 26px;border-bottom:1px solid var(--line)}.brand{font-size:25px;letter-spacing:-1.2px;font-weight:900}.brand .fahren{color:var(--orange)}.brand .cool{color:var(--teal)}.eyebrow{font-size:10px;font-weight:850;letter-spacing:2px;color:#7b969b;margin-top:5px}.topright{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);padding:10px 13px;border-radius:999px;font-size:12px;font-weight:800}.dot{width:8px;height:8px;border-radius:50%;background:#a7b7bb}.dot.on{background:#159f81}.dot.warn{background:#d88c43}.outline{border:1px solid #d6e6e5;background:white;color:#2e5960;padding:11px 16px;border-radius:12px;font-size:13px;font-weight:800}.outline:hover{background:#edf8f6}.welcome{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:35px 0 23px}.welcome h1{font-size:clamp(27px,3.2vw,43px);margin:0 0 7px;letter-spacing:-1.5px}.welcome p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}.smallcaps{font-size:10px;font-weight:850;letter-spacing:1.7px;color:var(--teal);margin:0 0 12px}.columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(330px,.93fr);gap:20px}.stack{display:flex;flex-direction:column;gap:20px}.card{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:20px;padding:24px}.cardhead{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}.card h2{font-size:18px;letter-spacing:-.5px;margin:0}.muted{color:var(--muted)}.mini{font-size:12px}.badge{display:inline-flex;gap:6px;align-items:center;color:#137f77;background:#e8f8f4;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:800}.metricgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.metric{border:1px solid #e5eeee;border-radius:15px;padding:18px;background:linear-gradient(150deg,#fff,#f8fcfb)}.metric label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bottom:13px}.value{font-size:clamp(24px,3.1vw,38px);font-weight:850;letter-spacing:-1.8px;white-space:nowrap}.value .unit{font-size:16px;color:#7d9a9d;font-weight:700;letter-spacing:0}.metric small{display:block;margin-top:8px;font-size:11px;color:#849da2}.controlgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.control-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;font-weight:800;font-size:13px}.rangeinput{display:flex;align-items:center;gap:8px}.number{width:92px;text-align:center;padding:13px 8px;border:1px solid #d8e7e6;border-radius:11px;font-weight:850;color:var(--deep)}input[type=range]{accent-color:var(--teal);width:100%;cursor:pointer}.bounds{display:flex;justify-content:space-between;font-size:11px;color:#91a5a8;margin-top:9px}.mode-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.mode{background:#fff;border:1px solid #d9e8e7;border-radius:13px;padding:16px;text-align:left;color:#3d6266;font-weight:800;display:flex;gap:10px;align-items:center}.mode.active.cool{border-color:#13a59b;color:#007e76;background:#ebfbf7}.mode.active.heat{border-color:#e8a368;color:#c47637;background:#fff4ea}.mode span{font-size:21px}.actionrow{display:flex;gap:11px;margin-top:22px}.primary{border:0;border-radius:12px;padding:16px 20px;color:white;background:linear-gradient(120deg,#0aa69b,#0b8f87);font-weight:850;flex:1}.primary:not(:disabled):hover{filter:brightness(.95)}.danger{background:#fff;border:1px solid #f4c4b6;color:#c05f4b;padding:15px 24px;border-radius:12px;font-weight:850}.danger:not(:disabled):hover{background:#fff4f1}.subtle{background:#f5faf9;border:1px solid #e4eeec;border-radius:12px;padding:13px 15px;color:#6b888d;font-size:12px;line-height:1.6;margin-top:18px}.status{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf2f2;padding:13px 0;font-size:13px}.status:last-of-type{border-bottom:0}.status span{color:var(--muted)}.status strong{font-weight:850}.connection-fields{display:grid;gap:11px}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}.field input{width:100%;border:1px solid #d7e6e5;border-radius:11px;padding:13px 12px;color:var(--deep);background:#fff}.field small{display:block;margin-top:5px;color:#839c9e;font-size:11px;line-height:1.5}.inlinebuttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.softbutton{border:1px solid #cde6e2;background:#effaf7;color:#147f77;border-radius:11px;padding:12px 15px;font-weight:800;font-size:12px}.softbutton:hover{background:#dff5ef}.linkcard{background:linear-gradient(120deg,#fff9f3,#f1faf7);border:1px solid #f0e8dc;border-radius:20px;padding:22px;display:flex;gap:15px;align-items:center;justify-content:space-between}.linkcard h2{font-size:17px;margin:0 0 7px}.linkcard p{font-size:12px;margin:0;line-height:1.55;color:var(--muted)}.linkcard a{flex-shrink:0;background:var(--deep);color:white;border-radius:11px;padding:12px 16px;font-weight:800;font-size:12px}.notice{font-size:12px;line-height:1.65;border-left:3px solid #e3aa6e;padding:9px 0 9px 13px;color:#6c7e80;margin-top:14px}.feedback{min-height:22px;margin-top:11px;font-size:12px;font-weight:750;color:#667f85}.feedback.bad{color:#b34840}.feedback.good{color:#117f74}.offline{color:#c16d53!important}.footer{margin-top:30px;font-size:11px;color:#8ba1a5;display:flex;justify-content:space-between;gap:12px}.modeindicator{font-size:11px;font-weight:850;color:#9a7b44;background:#fff5de;padding:8px 10px;border-radius:999px}.modeindicator.live{background:#e7f8f2;color:#187a6e}
-@media(max-width:950px){.columns{grid-template-columns:1fr}.welcome{padding-top:28px}}@media(max-width:610px){.shell{padding:15px 13px 35px}.topbar{align-items:flex-start}.topright{justify-content:flex-end}.brand{font-size:22px}.welcome{display:block}.welcome .pill{margin-top:12px}.card{padding:18px}.metricgrid{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:1/-1}.controlgrid{grid-template-columns:1fr}.linkcard{align-items:flex-start;flex-direction:column}.actionrow{flex-direction:column}.footer{flex-direction:column}.value{font-size:30px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <meta content="#f6f9ff" name="theme-color"/>
+  <title>
+   FahrenCool | Therapy Command Center
+  </title>
+  <link href="./favicon.ico" rel="icon" type="image/x-icon"/>
+  <style>
+   :root {
+    --blue:#1044ad;
+    --orange:#ff7900;
+    --ink:#142d58;
+    --muted:#64748b;
+    --line:#e1e8f5;
+    --bg:#f6f9ff;
+    --shadow:0 14px 36px #1b437014}
+
+
+* {
+    box-sizing:border-box}
+
+body {
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font:14px Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+
+button,input,select {
+    font:inherit}
+
+button {
+    cursor:pointer}
+
+button:disabled {
+    opacity:.5;
+    cursor:not-allowed}
+
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible {
+    outline:3px solid #8db7ff;
+    outline-offset:3px}
+
+a {
+    text-decoration:none;
+    color:inherit}
+
+
+.shell {
+    max-width:1500px;
+    margin:auto;
+    padding:22px 26px 45px}
+
+.top {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line)}
+
+.brand {
+    font-size:25px;
+    font-weight:900;
+    letter-spacing:-1.1px}
+
+.brand b {
+    color:var(--orange)}
+
+.brand span {
+    color:var(--blue)}
+
+.subbrand {
+    font-size:10px;
+    letter-spacing:1.8px;
+    color:#8191ac;
+    font-weight:800}
+
+.topright {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap}
+
+.pill {
+    border:1px solid var(--line);
+    border-radius:30px;
+    padding:9px 13px;
+    background:#fff;
+    font-size:12px;
+    font-weight:750}
+
+.outline {
+    background:white;
+    border:1px solid #d1def5;
+    border-radius:11px;
+    padding:11px 14px;
+    color:var(--blue);
+    font-weight:800}
+
+.welcome {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin:29px 0 21px}
+
+.eyebrow {
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:2px;
+    color:var(--blue)}
+
+h1 {
+    font-size:clamp(26px,3vw,41px);
+    letter-spacing:-1.2px;
+    margin:7px 0}
+
+p {
+    color:var(--muted);
+    line-height:1.6;
+    margin:5px 0}
+
+.layout {
+    display:grid;
+    grid-template-columns:minmax(255px,.82fr) minmax(320px,1.45fr) minmax(255px,.9fr);
+    gap:16px;
+    align-items:start}
+
+.stack {
+    display:grid;
+    gap:16px}
+
+.card {
+    background:white;
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+    padding:20px;
+    min-width:0}
+
+.card h2 {
+    font-size:16px;
+    margin:0 0 7px}
+
+.small {
+    font-size:12px;
+    color:var(--muted)}
+
+.presetlist {
+    display:grid;
+    gap:8px;
+    max-height:590px;
+    overflow:auto;
+    padding:2px 4px 2px 1px}
+
+.preset {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    text-align:left;
+    background:#f8faff;
+    border:1px solid #e6edfa;
+    border-radius:12px;
+    padding:12px;
+    color:var(--ink);
+    width:100%;
+    align-items:center}
+
+.preset:hover {
+    border-color:#93b5ef}
+
+.preset.active {
+    background:#eaf2ff;
+    border-color:#729ce7;
+    box-shadow:inset 3px 0 var(--blue)}
+
+.preset strong {
+    display:block;
+    font-size:12px}
+
+.preset small {
+    display:block;
+    color:var(--muted);
+    margin-top:4px;
+    font-size:11px}
+
+.tag {
+    border-radius:20px;
+    padding:5px 7px;
+    font-size:10px;
+    font-weight:850;
+    white-space:nowrap}
+
+.cool {
+    color:#1751b7;
+    background:#e4efff}
+
+.heat {
+    color:#c86b17;
+    background:#fff0e2}
+
+.contrast {
+    color:#6a54b3;
+    background:#f0eaff}
+
+
+.viewer {
+    padding:0;
+    overflow:hidden}
+
+.viewerhead {
+    padding:17px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px}
+
+.viewerarea {
+    height:min(64vh,600px);
+    min-height:400px;
+    position:relative;
+    background:radial-gradient(circle at 50% 40%,#fff 0%,#dce8fa 54%,#b9cce7 100%)}
+
+#scene {
+    position:absolute;
+    inset:0}
+
+#scene canvas {
+    display:block;
+    width:100%;
+    height:100%}
+
+.platform {
+    position:absolute;
+    bottom:9%;
+    left:50%;
+    transform:translateX(-50%);
+    width:48%;
+    height:11%;
+    border-radius:50%;
+    background:radial-gradient(ellipse,#8ca9e046,transparent 70%);
+    pointer-events:none}
+
+.viewerhint {
+    position:absolute;
+    top:12px;
+    left:13px;
+    background:#ffffffdb;
+    border:1px solid #dce7fb;
+    padding:9px 12px;
+    border-radius:10px;
+    font-size:11px;
+    color:#5b7197;
+    max-width:75%}
+
+.viewerstatus {
+    position:absolute;
+    bottom:15px;
+    left:15px;
+    right:15px;
+    background:#ffffffdf;
+    backdrop-filter:blur(6px);
+    border:1px solid #e0eafa;
+    padding:12px;
+    border-radius:12px;
+    font-size:12px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:center}
+
+.vieweractions {
+    display:flex;
+    gap:7px}
+
+.vieweractions button {
+    background:#fff;
+    border:1px solid #d5e2f8;
+    color:var(--blue);
+    border-radius:9px;
+    padding:8px;
+    font-size:11px;
+    font-weight:800}
+
+#modelLoading {
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-content:center;
+    text-align:center;
+    gap:9px;
+    background:#f1f6ffec;
+    color:var(--blue);
+    font-weight:800;
+    z-index:3}
+
+.spinner {
+    width:36px;
+    height:36px;
+    border:3px solid #bcd0f7;
+    border-top-color:var(--blue);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    margin:auto}
+
+@keyframes spin {
+    to {
+    transform:rotate(360deg)}
+}
+
+.readings {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px}
+
+.reading {
+    background:#f7faff;
+    border:1px solid #e6edfa;
+    border-radius:13px;
+    padding:12px}
+
+.reading strong {
+    display:block;
+    font-size:23px;
+    margin:8px 0}
+
+.reading span {
+    font-size:11px;
+    color:var(--muted)}
+
+.fieldlabel {
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    font-size:12px;
+    font-weight:800;
+    margin:17px 0 9px}
+
+.fieldlabel span {
+    color:var(--muted);
+    font-weight:650}
+
+.range {
+    width:100%;
+    accent-color:var(--blue)}
+
+.bounds {
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:#8090ac;
+    margin-top:4px}
+
+.setting {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:#f6f9ff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    margin-top:13px}
+
+.setting strong {
+    font-size:22px;
+    white-space:nowrap}
+
+.setting p {
+    font-size:11px;
+    margin:0}
+
+.btn {
+    width:100%;
+    border:0;
+    border-radius:12px;
+    padding:14px 16px;
+    background:var(--blue);
+    color:#fff;
+    font-weight:850;
+    margin-top:14px}
+
+.btn.secondary {
+    background:white;
+    border:1px solid #eab8ac;
+    color:#b95142}
+
+.btn.ghost {
+    background:#eaf1ff;
+    color:var(--blue)}
+
+.notice {
+    font-size:11px;
+    color:#697d9c;
+    line-height:1.6;
+    background:#f5f8ff;
+    border:1px solid #e7edf8;
+    border-radius:12px;
+    padding:11px;
+    margin-top:12px}
+
+.rowline {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 0;
+    border-bottom:1px solid #edf1f8;
+    font-size:12px}
+
+.rowline:last-child {
+    border-bottom:0}
+
+.rowline span {
+    color:var(--muted)}
+
+.feedback {
+    font-size:12px;
+    line-height:1.5;
+    color:#4267a7;
+    margin-top:10px;
+    min-height:20px}
+
+.bottomlink {
+    margin-top:17px;
+    background:linear-gradient(110deg,#e9f1ff,#fff5eb);
+    border:1px solid #dfe8fa;
+    border-radius:17px;
+    padding:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px}
+
+.bottomlink strong {
+    display:block}
+
+.bottomlink a {
+    background:var(--blue);
+    color:white;
+    padding:11px 15px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap}
+
+.foot {
+    font-size:11px;
+    color:#8899b4;
+    margin-top:23px}
+
+
+@media(max-width:1120px) {
+    .layout {
+    grid-template-columns:minmax(245px,1fr) minmax(330px,1.6fr)}
+
+.right {
+    grid-column:1/-1;
+    grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:720px) {
+    .shell {
+    padding:15px 12px 32px}
+
+.layout {
+    grid-template-columns:1fr}
+
+.right {
+    grid-column:auto;
+    grid-template-columns:1fr}
+
+.welcome {
+    margin:22px 0}
+
+.card {
+    padding:16px}
+
+.viewer {
+    padding:0}
+
+.viewerarea {
+    min-height:420px;
+    height:53vh}
+
+.presetlist {
+    max-height:240px}
+
+.readings {
+    gap:6px}
+
+.reading {
+    padding:9px}
+
+.reading strong {
+    font-size:19px}
+
+.topright .pill {
+    display:none}
+
+.brand {
+    font-size:21px}
+}
+
+@media(prefers-reduced-motion:reduce) {
+    .spinner {
+    animation:none}
+}
+  
+/* Loading screen CSS from bodyChart.html; scoped to the full-screen dashboard overlay. */
+#modelLoading {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #172b50;
+  --orange: #f47735;
+  --cool-blue: #2454c6;
+  --royal-blue: #2454c6;
+  --muted: #68758b;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    ellipse at 48% 42%,
+    #fffdf9,
+    #f8f5ef 48%,
+    #e6efeb 100%
+  );
+  transition: opacity .5s, visibility .5s;
+}
+
+#modelLoading.failed #loadText {
+  display: block;
+  color: #9a4e3b;
+}
+
+#modelLoading.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.fc-loader {
+  width: min(680px, 96vw);
+  text-align: center;
+}
+
+.fc-pad {
+  width: 100%;
+  max-width: 650px;
+  filter: drop-shadow(0 14px 22px rgba(161, 98, 53, .16));
+  animation: float 3.4s ease-in-out infinite;
+}
+
+.fc-pad-tube,
+.fc-pad-water,
+.fc-water-shimmer {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Align the loop to the visual center of the pad. */
+  transform: translate(-1.5px, -0.5px);
+}
+
+.fc-pad-tube {
+  stroke: #a6bde9;
+  stroke-width: 14;
+}
+
+.fc-pad-water {
+  stroke: #2454c6;
+  stroke-width: 4;
+  stroke-dasharray: 2 3;
+  animation: fcWaterFlow 1.4s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.fc-water-shimmer {
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  stroke-dasharray: 1 4;
+  animation: fcWaterFlow 1.4s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.fc-loader-brand {
+  margin-top: -14px;
+  font-size: 42px;
+  font-weight: 900;
+  display: inline-block;
+  animation: fcBrandBounce 1.55s ease-in-out infinite;
+  will-change: transform;
+}
+
+.brand-fahren {
+  color: var(--orange);
+}
+
+.brand-cool {
+  color: var(--cool-blue);
+}
+
+#loadText {
+  display: none;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+@keyframes fcWaterFlow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -5; }
+}
+
+@keyframes fcBrandBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-11px); }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+
+#modelLoading {
+  background: radial-gradient(ellipse at 48% 42%, #fffcf7 0%, #f3e8d5 62%, #e7efff 100%);
+}
+#modelLoading .fc-pad {
+  filter: drop-shadow(0 14px 22px rgba(23, 43, 80, .13));
+}
+#modelLoading .fc-pad-water { stroke: #2454c6; }
+#modelLoading .fc-water-shimmer { stroke: #ffffff; }
+#modelLoading .brand-fahren { color: #f47735; }
+#modelLoading .brand-cool { color: #2454c6; }
+#modelLoading .fc-loader { font-family: Arial, sans-serif; }
+#modelLoading .fc-loader-brand { font-family: Arial, sans-serif; letter-spacing: normal; }
+html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  *:not(.fc-pad-water):not(.fc-water-shimmer):not(.fc-loader-brand),
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .fc-pad-water,
+  .fc-water-shimmer {
+    animation: fcWaterFlow 1.4s linear infinite !important;
+  }
+
+  .fc-loader-brand {
+    animation: fcBrandBounce 1.55s ease-in-out infinite !important;
+  }
+}
+
+
+/* Mobile loading: avoid costly SVG filter and simultaneous float effects.
+   The water-flow animation remains active and seamless. */
+@media (max-width: 767px) {
+  .fc-pad { filter: none !important; animation: none !important; }
+  .fc-loader-brand { animation: none !important; }
+  .fc-pad-water, .fc-water-shimmer { animation-duration: 1.8s; }
+}
+
+
 </style>
+  <script type="importmap">
+   {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}
+  </script>
+ <script>
+  // Continue the loading-animation phase after returning from Body Chart.
+  // A full page navigation still reloads the document, but this avoids
+  // restarting the pad and water motion from their initial keyframe.
+  try {
+    const started = Number(sessionStorage.getItem('fahrencool-loader-start'));
+    if (started && Date.now() - started < 30000) {
+      const elapsed = (Date.now() - started) / 1000;
+      const style = document.createElement('style');
+      style.textContent = `
+        #modelLoading .fc-pad-water, #modelLoading .fc-water-shimmer {
+          animation-delay: -${elapsed % 1.4}s;
+        }
+        #modelLoading .fc-pad { animation-delay: -${elapsed % 3.4}s; }
+        #modelLoading .fc-loader-brand { animation-delay: -${elapsed % 1.55}s; }
+      `;
+      document.head.appendChild(style);
+    }
+    sessionStorage.removeItem('fahrencool-loader-start');
+  } catch (_) {}
+</script>
 </head>
-<body>
-<div class="shell">
-  <header class="topbar">
-    <div><a class="brand" href="./index.html" aria-label="FahrenCool home"><span class="fahren">FAHREN</span><span class="cool">COOL</span></a><div class="eyebrow">REMOTE THERAPY CONSOLE</div></div>
-    <div class="topright"><span class="modeindicator" id="modeIndicator">NOT CONNECTED</span><span class="pill"><span class="dot" id="headerDot"></span><span id="headerStatus">Offline</span></span><a class="outline" href="./bodyChart.html">Body Chart ↗</a></div>
-  </header>
-  <section class="welcome"><div><div class="smallcaps">DEVICE OVERVIEW</div><h1>Therapy Dashboard</h1><p>Monitor your FahrenCool device and manage therapy temperature and session duration.</p></div><span class="pill" id="sessionPill">No active session</span></section>
-  <div class="columns">
-    <div class="stack">
-      <section class="card" aria-labelledby="telemetryTitle"><div class="cardhead"><h2 id="telemetryTitle">Live Device Readings</h2><span class="badge" id="readingBadge">● Waiting for connection</span></div><div class="metricgrid">
-        <div class="metric"><label>Water Temperature</label><div class="value"><span id="actualTemp">—</span><span class="unit"> °C</span></div><small>Reported by device sensor</small></div>
-        <div class="metric"><label>Target Temperature</label><div class="value"><span id="actualTarget">—</span><span class="unit"> °C</span></div><small>Active device setpoint</small></div>
-        <div class="metric"><label>Time Remaining</label><div class="value" id="actualRemaining">—:—</div><small>Reported by controller</small></div>
-      </div></section>
-      <section class="card" aria-labelledby="controlTitle"><div class="cardhead"><h2 id="controlTitle">Session Controls</h2><span class="badge" id="controlStatus">Controls locked</span></div>
-        <div class="controlgrid">
-          <div><div class="control-label"><label for="targetInput">Target temperature</label><span class="muted mini">12–42 °C</span></div><div class="rangeinput"><input id="targetRange" type="range" min="12" max="42" step="0.5" value="35" aria-label="Target temperature slider"><input id="targetInput" class="number" type="number" min="12" max="42" step="0.5" value="35" inputmode="decimal" aria-label="Target temperature in Celsius"></div><div class="bounds"><span>12 °C</span><span>42 °C</span></div></div>
-          <div><div class="control-label"><label for="durationInput">Session duration</label><span class="muted mini">1–60 min</span></div><div class="rangeinput"><input id="durationRange" type="range" min="1" max="60" step="1" value="15" aria-label="Session duration slider"><input id="durationInput" class="number" type="number" min="1" max="60" step="1" value="15" inputmode="numeric" aria-label="Session minutes"></div><div class="bounds"><span>1 min</span><span>60 min</span></div></div>
-        </div>
-        <div style="margin-top:22px"><div class="control-label">Therapy mode</div><div class="mode-row"><button class="mode cool" id="coolMode" type="button" aria-pressed="false"><span>❄</span> Cooling</button><button class="mode heat active" id="heatMode" type="button" aria-pressed="true"><span>☀</span> Heating</button></div></div>
-        <div class="actionrow"><button id="startButton" class="primary" type="button" disabled>Start Therapy</button><button id="stopButton" class="danger" type="button" disabled>Stop Session</button></div>
-        <div class="subtle">Start sends the requested mode, temperature and duration to the LCD control API. The LCD must forward approved commands to the ESP32 controller and enforce safety interlocks. Stop requests a device-side shutdown.</div><div class="feedback" id="controlFeedback" role="status" aria-live="polite"></div>
-      </section>
-      <section class="linkcard"><div><h2>Explore the 3D Body Chart</h2><p>See anatomical regions and their associated hot and cold therapy reference presets.</p></div><a href="./bodyChart.html">Open Body Chart ↗</a></section>
+ <body>
+  <div class="shell">
+   <header class="top">
+    <div>
+     <a class="brand" href="./index.html">
+      <b>
+       FAHREN
+      </b>
+      <span>
+       COOL
+      </span>
+     </a>
+     <div class="subbrand">
+      THERAPY COMMAND CENTER
+     </div>
     </div>
-    <div class="stack">
-      <section class="card" aria-labelledby="linkTitle"><div class="cardhead"><h2 id="linkTitle">Device Connection</h2><span class="pill"><span class="dot" id="connectionDot"></span><span id="connectionLabel">Disconnected</span></span></div>
-        <div class="connection-fields"><div class="field"><label for="apiUrl">LCD API base URL</label><input id="apiUrl" type="url" placeholder="https://your-secure-api.example.com" autocomplete="url" spellcheck="false"><small>Leave blank for same-origin API. From Cloudflare Pages, use a secure backend/proxy; a private LCD IP usually cannot be called directly from HTTPS.</small></div>
-        <div class="field"><label for="pairingToken">Device pairing token</label><input id="pairingToken" type="password" placeholder="Enter the token shown on the LCD" autocomplete="off" spellcheck="false"><small>Used only for requests. Not saved in browser storage.</small></div></div>
-        <div class="inlinebuttons"><button class="softbutton" id="connectButton" type="button">Connect to Device</button><button class="outline" id="disconnectButton" type="button">Disconnect</button><button class="outline" id="demoButton" type="button">Preview Demo</button></div><div class="feedback" id="connectionFeedback" role="status" aria-live="polite"></div>
-        <div class="notice">Demo mode is a local UI simulation only. It does not communicate with or activate the pump, fan, TEC, LCD, or controller.</div>
-      </section>
-      <section class="card" aria-labelledby="systemTitle"><div class="cardhead"><h2 id="systemTitle">System Status</h2><span class="muted mini">Updates every 2 seconds</span></div>
-        <div class="status"><span>LCD connection</span><strong id="lcdStatus">Offline</strong></div>
-        <div class="status"><span>ESP32 controller link</span><strong id="espStatus">Unknown</strong></div>
-        <div class="status"><span>Therapy state</span><strong id="therapyStatus">Idle / Unknown</strong></div>
-        <div class="status"><span>Water pump</span><strong id="pumpStatus">Unknown</strong></div>
-        <div class="status"><span>Cooling fan</span><strong id="fanStatus">Unknown</strong></div>
-        <div class="status"><span>TEC module</span><strong id="tecStatus">Unknown</strong></div>
-        <div class="status"><span>Last update</span><strong id="lastUpdated">—</strong></div>
-      </section>
-      <section class="card"><div class="cardhead"><h2>Connection Architecture</h2></div><p class="muted" style="font-size:13px;line-height:1.85;margin:0">Browser dashboard → authenticated LCD API or secure proxy → Sunton LCD ESP32 → ESP-NOW → standalone ESP32 → pump, fan and TEC.</p><div class="notice">This HTML supplies the interface and API adapter. Real operation requires matching routes on the LCD or a secure backend, plus firmware-side validation and independent temperature and hardware safety protections.</div></section>
+    <div class="topright">
+     <span class="pill">
+      ● VISUAL PROTOTYPE
+     </span>
+    </div>
+   </header>
+   <section class="welcome">
+    <div>
+     <div class="eyebrow">
+      PRESET-BASED THERAPY
+     </div>
+     <h1>
+      Personalized therapy, visualized.
+     </h1>
+     <p>
+      Select an available preset, explore its target region, and adjust comfort settings within the defined limits.
+     </p>
+    </div>
+    <span class="pill" id="sessionBadge">
+     Session idle
+    </span>
+   </section>
+   <main class="layout">
+    <aside class="card">
+     <h2>
+      Therapy Presets
+     </h2>
+     <p class="small">
+      Select a predefined therapy. The mode and limits are preset-controlled.
+     </p>
+     <div aria-label="Available therapy presets" class="presetlist" id="presetList">
+     </div>
+    </aside>
+    <section class="stack">
+     <div class="card viewer">
+      <div class="viewerhead">
+       <div>
+        <h2>
+         3D Therapy Visualization
+        </h2>
+        <span class="small" id="regionLabel">
+         Full-body view · Breathing idle
+        </span>
+       </div>
+       <span class="tag cool" id="modeTag">
+        COOLING
+       </span>
+      </div>
+      <div class="viewerarea">
+       <div class="platform">
+       </div>
+       <div id="scene">
+       </div>
+       <div class="viewerhint">
+        Drag to rotate · Scroll to zoom · Select a preset to focus
+       </div>
+  <div id="modelLoading" role="status" aria-live="polite">
+    <div class="fc-loader">
+      <svg class="fc-pad" viewBox="0 0 340 265"
+           xmlns="http://www.w3.org/2000/svg"
+           aria-hidden="true">
+        <defs>
+          <linearGradient id="padMaterial" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#c8d9f6"/>
+          </linearGradient>
+        </defs>
+
+        <rect x="74" y="49" width="192" height="141"
+              rx="31" fill="#7697c9"/>
+        <rect x="69" y="43" width="192" height="141"
+              rx="31" fill="url(#padMaterial)"
+              stroke="#9cb9e6" stroke-width="3"/>
+        <rect x="79" y="53" width="172" height="119"
+              rx="24" fill="#eef4ff"
+              stroke="#ffffff" stroke-width="2"/>
+
+        <path class="fc-pad-tube"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+
+        <path class="fc-pad-water"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+
+        <path class="fc-water-shimmer"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+      </svg>
+
+      <div class="fc-loader-brand">
+        <span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span>
+      </div>
+
+      <p id="loadText" class="fc-loader-message"></p>
     </div>
   </div>
-  <div class="footer"><span>FAHRENCOOL · THERAPEUTIC TEMPERATURE MANAGEMENT</span><span>Control commands are not confirmed until the device responds.</span></div>
-</div>
-<script>
-"use strict";
-// Match these routes and JSON fields to your LCD firmware or secure backend.
-const API = Object.freeze({ status: "/api/status", command: "/api/command", pollMs: 2000, timeoutMs: 7000 });
-const $ = id => document.getElementById(id);
-const state = { mode: "heat", transport: "offline", active: false, busy: false, timer: null, pending: null, demoRemaining: 0, demoTarget: 35, demoTemp: 27, demoLastTick: 0, generation: 0 };
-const getTemp = () => Number($("targetInput").value);
-const getMinutes = () => Number($("durationInput").value);
-const fmtTime = seconds => { if (!Number.isFinite(seconds)) return "—:—"; const s = Math.max(0, Math.floor(seconds)); return `${String(Math.floor(s / 60)).padStart(2,"0")}:${String(s % 60).padStart(2,"0")}`; };
-const flag = value => value === true || value === 1 || value === "true" || value === "on";
-const fmtBool = value => value == null ? "Unknown" : (flag(value) ? "On" : "Off");
-const textFeedback = (type, message, bad = false) => { const e = $(type + "Feedback"); e.textContent = message; e.className = `feedback ${bad ? "bad" : "good"}`; };
-function clampInput(input, min, max, step) { const number = Number(input.value); if (!Number.isFinite(number)) return min; return Math.min(max, Math.max(min, Math.round(number / step) * step)); }
-function syncRange(name, min, max, step) { const input = $(name + "Input"), range = $(name + "Range"); range.addEventListener("input", () => input.value = range.value); input.addEventListener("change", () => { const value = clampInput(input, min, max, step); input.value = value; range.value = value; }); }
-syncRange("target", 12, 42, .5);
-syncRange("duration", 1, 60, 1);
-function setMode(mode) { state.mode = mode; for (const kind of ["cool", "heat"]) { const el = $(kind + "Mode"); const selected = kind === mode; el.classList.toggle("active", selected); el.setAttribute("aria-pressed", String(selected)); } }
-$("coolMode").addEventListener("click", () => setMode("cool"));
-$("heatMode").addEventListener("click", () => setMode("heat"));
-function renderConnection() { const online = state.transport === "live" || state.transport === "demo"; const live = state.transport === "live"; const demo = state.transport === "demo"; $("modeIndicator").textContent = live ? "LIVE DEVICE" : demo ? "DEMO / NO HARDWARE" : "NOT CONNECTED"; $("modeIndicator").classList.toggle("live", live); for (const id of ["headerDot", "connectionDot"]) $(id).className = `dot ${online ? "on" : ""}`; $("headerStatus").textContent = live ? "LCD online" : demo ? "Preview only" : "Offline"; $("connectionLabel").textContent = live ? "Connected" : demo ? "Demo" : "Disconnected"; $("readingBadge").textContent = live ? "● Live readings" : demo ? "● Simulated readings" : "● Waiting for connection"; $("controlStatus").textContent = live ? "Device commands" : demo ? "Simulation only" : "Controls locked"; $("startButton").disabled = !online || state.busy || state.active; $("stopButton").disabled = !online || state.busy || !state.active; $("sessionPill").textContent = online && state.active ? "Therapy session running" : online ? "Device idle" : "No active session"; if (!online) { $("lcdStatus").textContent = "Offline"; $("espStatus").textContent = "Unknown"; $("therapyStatus").textContent = "Idle / Unknown"; } }
-function resetTelemetry() { for (const id of ["actualTemp", "actualTarget"]) $(id).textContent = "—"; $("actualRemaining").textContent = "—:—"; for (const id of ["pumpStatus", "fanStatus", "tecStatus"]) $(id).textContent = "Unknown"; $("lastUpdated").textContent = "—"; }
-function apiBase() { const base = $("apiUrl").value.trim().replace(/\/+$/, ""); return base; }
-function safeApiUrl(path) { const base = apiBase(); const url = new URL(base + path, location.href); if (!/^https?:$/.test(url.protocol)) throw Error("Only HTTP(S) API URLs are supported."); if (location.protocol === "https:" && url.protocol !== "https:") throw Error("An HTTPS dashboard needs an HTTPS API or a same-origin secure proxy."); return url.toString(); }
-async function request(path, options = {}) { const controller = new AbortController(); state.pending = controller; const timeout = setTimeout(() => controller.abort(), API.timeoutMs); try { const token = $("pairingToken").value.trim(); const headers = { "Accept": "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { "X-FahrenCool-Token": token } : {}) }; const res = await fetch(safeApiUrl(path), { ...options, headers, signal: controller.signal, cache: "no-store", credentials: "omit" }); if (!res.ok) throw Error(`HTTP ${res.status}: ${res.statusText}`); const raw = await res.text(); if (!raw) return {}; try { return JSON.parse(raw); } catch { throw Error("Device returned invalid JSON."); } } finally { clearTimeout(timeout); if (state.pending === controller) state.pending = null; } }
-// Expected status fields: lcdOnline, espOnline, active, mode, temperatureC, targetC, remainingSeconds, pump, fan, tec.
-// Rename fields here only if your ESP32 firmware returns different JSON.
-function updateTelemetry(raw) { const data = raw.status && typeof raw.status === "object" ? raw.status : raw; const temperature = data.temperatureC ?? data.waterTempC ?? data.t1 ?? data.temperature; const target = data.targetC ?? data.target ?? data.setpoint; const remaining = data.remainingSeconds ?? data.remaining_s ?? data.remaining; const running = data.active ?? data.running ?? (typeof data.mode === "string" && /^(heat|cool|circulate|running)$/i.test(data.mode)); state.active = flag(running); $("actualTemp").textContent = Number.isFinite(Number(temperature)) && temperature != null ? Number(temperature).toFixed(1) : "—"; $("actualTarget").textContent = Number.isFinite(Number(target)) && target != null ? Number(target).toFixed(1) : "—"; $("actualRemaining").textContent = remaining != null && Number.isFinite(Number(remaining)) ? fmtTime(Number(remaining)) : "—:—"; $("lcdStatus").textContent = data.lcdOnline === false ? "Unavailable" : "Online"; $("espStatus").textContent = data.espOnline == null && data.controllerOnline == null ? "Unknown" : fmtBool(data.espOnline ?? data.controllerOnline).replace("On", "Linked").replace("Off", "No link"); $("therapyStatus").textContent = state.active ? `Running (${String(data.mode ?? "therapy")})` : String(data.mode ?? "Idle"); $("pumpStatus").textContent = fmtBool(data.pump); $("fanStatus").textContent = fmtBool(data.fan); $("tecStatus").textContent = fmtBool(data.tec ?? data.tecEnabled); $("lastUpdated").textContent = new Date().toLocaleTimeString(); renderConnection(); }
-function clearPolling() { if (state.timer) clearInterval(state.timer); state.timer = null; if (state.pending) state.pending.abort(); state.pending = null; }
-function disconnect(message = "Disconnected") { state.generation++; clearPolling(); state.transport = "offline"; state.active = false; state.busy = false; resetTelemetry(); renderConnection(); textFeedback("connection", message); }
-async function pollStatus(generation) { if (state.transport !== "live" || state.busy || state.pending) return; try { const status = await request(API.status); if (state.generation !== generation) return; updateTelemetry(status); } catch (error) { if (state.generation !== generation) return; disconnect(`Connection lost: ${error.message}`); } }
-$("connectButton").addEventListener("click", async () => { disconnect(""); const generation = state.generation; $("connectButton").disabled = true; textFeedback("connection", "Checking LCD status…"); try { const response = await request(API.status); if (generation !== state.generation) return; if (response.ok === false || response.lcdOnline === false) throw Error(response.error || "LCD reported unavailable"); state.transport = "live"; updateTelemetry(response); textFeedback("connection", "Connected to LCD API. Check controller link status before starting."); state.timer = setInterval(() => pollStatus(generation), API.pollMs); } catch (e) { if (generation === state.generation) { disconnect(`Unable to connect: ${e.message}`); textFeedback("connection", `Unable to connect: ${e.message}`, true); } } finally { $("connectButton").disabled = false; } });
-$("disconnectButton").addEventListener("click", () => disconnect("Disconnected locally. A running hardware session is NOT stopped by disconnecting."));
-$("demoButton").addEventListener("click", () => { disconnect(""); state.transport = "demo"; state.demoLastTick = performance.now(); state.demoRemaining = 0; state.demoTemp = 27; state.active = false; updateDemo(); state.timer = setInterval(updateDemo, 1000); textFeedback("connection", "Demo preview enabled. No real device is connected."); });
-function updateDemo() { if (state.transport !== "demo") return; const now = performance.now(); const dt = Math.max(0, Math.min(3, (now - state.demoLastTick) / 1000)); state.demoLastTick = now; if (state.active) { state.demoRemaining = Math.max(0, state.demoRemaining - dt); state.demoTemp += (state.demoTarget - state.demoTemp) * .055 * dt; if (!state.demoRemaining) state.active = false; } updateTelemetry({ lcdOnline: true, espOnline: true, active: state.active, mode: state.active ? state.mode.toUpperCase() : "IDLE", temperatureC: state.demoTemp, targetC: state.demoTarget, remainingSeconds: state.demoRemaining, pump: state.active, fan: state.active, tec: state.active }); }
-async function sendCommand(command) { if (state.busy || state.transport === "offline") return; const demo = state.transport === "demo"; if (command === "start") { const targetC = clampInput($("targetInput"), 12, 42, .5); const minutes = clampInput($("durationInput"), 1, 60, 1); $("targetInput").value = $("targetRange").value = targetC; $("durationInput").value = $("durationRange").value = minutes; if (!demo && !confirm(`Start ${state.mode} therapy at ${targetC} °C for ${minutes} minutes?`)) return; state.busy = true; renderConnection(); try { if (demo) { state.demoTarget = targetC; state.demoRemaining = minutes * 60; state.active = true; state.demoLastTick = performance.now(); updateDemo(); } else { const response = await request(API.command, { method: "POST", body: JSON.stringify({ command: "start", mode: state.mode, targetC, durationSeconds: minutes * 60 }) }); if (response.ok === false) throw Error(response.error || "Command rejected by LCD"); state.active = true; } textFeedback("control", demo ? "Demo session started. No hardware activated." : "Start request accepted. Confirm actual device state in live readings."); } catch (e) { textFeedback("control", `Start failed: ${e.message}`, true); } finally { state.busy = false; renderConnection(); } }
-  else { state.busy = true; renderConnection(); try { if (demo) { state.active = false; state.demoRemaining = 0; updateDemo(); } else { const response = await request(API.command, { method: "POST", body: JSON.stringify({ command: "stop" }) }); if (response.ok === false) throw Error(response.error || "Stop rejected by LCD"); } textFeedback("control", demo ? "Demo stopped." : "Stop request sent. Verify pump, fan and TEC states on the device."); } catch (e) { textFeedback("control", `Stop failed: ${e.message}. Use the LCD/hardware stop control.`, true); } finally { state.busy = false; renderConnection(); } }
-}
-$("startButton").addEventListener("click", () => sendCommand("start"));
-$("stopButton").addEventListener("click", () => sendCommand("stop"));
-renderConnection(); resetTelemetry();
-</script>
-</body>
+
+       <div class="viewerstatus">
+        <span id="viewerText">
+         Preparing 3D viewer…
+        </span>
+        <div class="vieweractions">
+         <button id="resetView" type="button">
+          Reset view
+         </button>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="card">
+      <h2>
+       Live Device Readings
+      </h2>
+      <p class="small">
+       Hardware telemetry is not connected in this visual prototype.
+      </p>
+      <div class="readings">
+       <div class="reading">
+        <span>
+         Water temperature
+        </span>
+        <strong>
+         — °C
+        </strong>
+        <span>
+         Sensor offline
+        </span>
+       </div>
+       <div class="reading">
+        <span>
+         Target temperature
+        </span>
+        <strong id="targetReading">
+         — °C
+        </strong>
+        <span>
+         Selected setpoint
+        </span>
+       </div>
+       <div class="reading">
+        <span>
+         Time remaining
+        </span>
+        <strong>
+         —:—
+        </strong>
+        <span>
+         No live session
+        </span>
+       </div>
+      </div>
+     </div>
+    </section>
+    <div class="stack right">
+     <section class="card">
+      <h2>
+       Therapy Configuration
+      </h2>
+      <p class="small" id="selectedName">
+       Choose a preset
+      </p>
+      <div class="setting">
+       <div>
+        <p>
+         Preset mode
+        </p>
+        <strong id="selectedMode">
+         —
+        </strong>
+       </div>
+       <div style="margin-left:auto;text-align:right">
+        <p>
+         Condition
+        </p>
+        <strong id="selectedCondition" style="font-size:13px">
+         —
+        </strong>
+       </div>
+      </div>
+      <div class="fieldlabel">
+       <label for="tempSlider">
+        Comfort temperature
+       </label>
+       <span id="tempLimits">
+        —
+       </span>
+      </div>
+      <input class="range" disabled="" id="tempSlider" step=".5" type="range"/>
+      <div class="bounds">
+       <span id="minTemp">
+        —
+       </span>
+       <span id="maxTemp">
+        —
+       </span>
+      </div>
+      <div class="setting">
+       <div>
+        <p>
+         Requested temperature
+        </p>
+        <strong id="tempValue">
+         — °C
+        </strong>
+       </div>
+       <div style="margin-left:auto;text-align:right">
+        <p>
+         Preset duration
+        </p>
+        <strong id="durationValue" style="font-size:17px">
+         —
+        </strong>
+       </div>
+      </div>
+      <button class="btn" id="startBtn" type="button">
+       Preview Session
+      </button>
+      <button class="btn secondary" disabled="" id="stopBtn" type="button">
+       Stop Preview
+      </button>
+      <p class="feedback" id="feedback" role="status">
+      </p>
+      <div class="notice">
+       Prototype only: Preview Session changes the interface, not physical hardware. Temperature limits are reference values from the uploaded therapy guide, not independently validated device safety limits.
+      </div>
+     </section>
+     <section class="card">
+      <h2>
+       System Status
+      </h2>
+      <div class="rowline">
+       <span>
+        LCD / API
+       </span>
+       <strong>
+        Not connected
+       </strong>
+      </div>
+      <div class="rowline">
+       <span>
+        ESP32 controller
+       </span>
+       <strong>
+        Not connected
+       </strong>
+      </div>
+      <div class="rowline">
+       <span>
+        Pump / TEC / Fan
+       </span>
+       <strong>
+        Unknown
+       </strong>
+      </div>
+      <div class="rowline">
+       <span>
+        3D animation
+       </span>
+       <strong id="animationStatus">
+        Loading…
+       </strong>
+      </div>
+      <div class="rowline">
+       <span>
+        Session state
+       </span>
+       <strong id="sessionState">
+        Idle
+       </strong>
+      </div>
+     </section>
+    </div>
+   </main>
+   <section class="bottomlink">
+    <div>
+     <strong>
+      Explore the Educational Body Chart
+     </strong>
+     <p class="small">
+      Learn about body regions and hot/cold therapy. Educational selections do not control this dashboard.
+     </p>
+    </div>
+    <a href="./bodyChart.html">
+     Open Body Chart ↗
+    </a>
+   </section>
+   <footer class="foot">
+    FAHRENCOOL · Therapy Dashboard · Interface demonstration only
+   </footer>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { REGIONS } from './data/bodyRegions.js';
+    import { THERAPY_PRESETS } from './data/therapyPresets.js';
+    import { FRONT_DIRECTION, SKIN_HEX } from './config/modelConfig.js';
+    
+    // Same character pipeline as bodyChart.html: walking.fbx provides the rigged
+    // human; breathing.fbx provides the idle animation. Neither the clinic nor
+    // scene.gltf is needed on the dashboard.
+    const HUMAN_URL = './assets/walking.fbx';
+    const IDLE_URL = './assets/breathing.fbx';
+    const MODEL_HEIGHT = 1.7;
+    const $ = id => document.getElementById(id);
+    const mobile = matchMedia('(max-width: 767px)');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    
+    const regionAliases = {
+      'upper back': 'upperBack',
+      'lower back': 'lowerBack',
+      'hip/gluteal': 'hip'
+    };
+    
+    function parseRange(value) {
+      const numbers = String(value).match(/\d+(?:\.\d+)?/g)?.map(Number) || [];
+      return numbers.length >= 2 ? numbers.slice(0, 2) : null;
+    }
+    
+    // Contrast requires a separate timed hot/cold controller. It is not offered
+    // as a single-temperature preview.
+    const presets = THERAPY_PRESETS
+      .filter(p => (p.mode === 'COOL' || p.mode === 'HEAT') && parseRange(p.temperature))
+      .map((p, index) => ({
+        ...p,
+        id: `preset-${index}`,
+        region: regionAliases[p.bodyPart] || p.bodyPart,
+        range: parseRange(p.temperature)
+      }));
+    
+    let selected = null;
+    let preview = false;
+    let human = null;
+    const bodyRoot = new THREE.Group();
+    let footBones = [];
+    let grounded = false;
+    const footPosition = new THREE.Vector3();
+    let mixer = null;
+    let bounds = null;
+    let currentRegion = null;
+    let cameraMoving = false;
+    let frameHandle = 0;
+    
+    const scene = new THREE.Scene();
+    scene.add(bodyRoot);
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !mobile.matches,
+      alpha: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, mobile.matches ? 1.25 : 1.6));
+    $('scene').appendChild(renderer.domElement);
+    
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 0.42;
+    controls.maxDistance = 5;
+    
+    const hemisphere = new THREE.HemisphereLight(0xffffff, 0x7c8fae, 1.5);
+    scene.add(hemisphere);
+    const key = new THREE.DirectionalLight(0xffffff, 2.0);
+    key.position.set(3, 5, 6);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xb5caff, 0.35);
+    fill.position.set(-3, 3, -4);
+    scene.add(fill);
+    
+    const clock = new THREE.Clock();
+    const cameraGoal = new THREE.Vector3();
+    const targetGoal = new THREE.Vector3();
+    const highlightColor = new THREE.Color(0x7187d9);
+    const highlightUniforms = {
+      uHighlightColor: { value: highlightColor },
+      uRegionShape: { value: new THREE.Vector4(0, 0, 1, 1) },
+      uRegionMode: { value: new THREE.Vector2(0, -1) },
+      uRegionStrength: { value: 0 },
+      uPulse: { value: 1 }
+    };
+    
+    // GPU-based highlight copied in principle from the working Body Chart.
+    // Region coordinates are computed ONCE when the FBX loads. No raycasting,
+    // surface projection, geometry rebuilding or texture uploads per frame.
+    function makeSkinMaterial() {
+      const material = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(SKIN_HEX),
+        roughness: 0.86,
+        metalness: 0,
+        side: THREE.DoubleSide
+      });
+    
+      material.onBeforeCompile = shader => {
+        Object.assign(shader.uniforms, highlightUniforms);
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', `
+            #include <common>
+            attribute vec4 bodyCoord;
+            varying vec4 vBodyCoord;
+          `)
+          .replace('#include <begin_vertex>', `
+            #include <begin_vertex>
+            vBodyCoord = bodyCoord;
+          `);
+    
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', `
+            #include <common>
+            uniform vec3 uHighlightColor;
+            uniform vec4 uRegionShape;
+            uniform vec2 uRegionMode;
+            uniform float uRegionStrength;
+            uniform float uPulse;
+            varying vec4 vBodyCoord;
+    
+            float fcSurfaceMask(float nx, float nz, float code) {
+              if (code < -0.5) return 0.0;
+              if (code < 0.5) return 1.0;
+              if (code < 1.5) return smoothstep(0.10, 0.45, nz);
+              if (code < 2.5) return smoothstep(0.10, 0.45, -nz);
+              float front = smoothstep(-0.05, 0.35, nz);
+              float side = smoothstep(0.20, 0.75, abs(nx));
+              float notBack = smoothstep(-0.20, 0.05, nz);
+              return max(front, side * notBack * 0.9);
+            }
+          `)
+          .replace('#include <color_fragment>', `
+            #include <color_fragment>
+            float xDist = uRegionMode.x > 0.5
+              ? abs(vBodyCoord.x) - uRegionShape.x
+              : vBodyCoord.x - uRegionShape.x;
+            float dist = length(vec2(
+              xDist / max(uRegionShape.z, 0.001),
+              (vBodyCoord.y - uRegionShape.y) / max(uRegionShape.w, 0.001)
+            ));
+            float shapeMask = 1.0 - smoothstep(0.58, 1.02, dist);
+            float mask = shapeMask * fcSurfaceMask(
+              vBodyCoord.z, vBodyCoord.w, uRegionMode.y
+            );
+            float glow = clamp(mask * uRegionStrength * uPulse, 0.0, 1.0);
+            diffuseColor.rgb = mix(diffuseColor.rgb, uHighlightColor, glow);
+          `);
+      };
+      material.customProgramCacheKey = () => 'fahrencool-dashboard-body-highlight-v1';
+      return material;
+    }
+    
+    function prepareHuman(character) {
+      human = character;
+      bodyRoot.add(human);
+      human.updateMatrixWorld(true);
+      const original = new THREE.Box3().setFromObject(human);
+      const height = original.getSize(new THREE.Vector3()).y;
+      if (!(height > 0)) throw new Error('Invalid human model bounds');
+      human.scale.multiplyScalar(MODEL_HEIGHT / height);
+      human.updateMatrixWorld(true);
+    
+      const normalized = new THREE.Box3().setFromObject(human);
+      const center = normalized.getCenter(new THREE.Vector3());
+      human.position.set(
+        human.position.x - center.x,
+        human.position.y - normalized.min.y,
+        human.position.z - center.z
+      );
+      human.updateMatrixWorld(true);
+    
+      bounds = new THREE.Box3().setFromObject(human);
+      const size = bounds.getSize(new THREE.Vector3());
+      const halfWidth = Math.max(size.x / 2, 0.001);
+      const centerX = bounds.getCenter(new THREE.Vector3()).x;
+      const point = new THREE.Vector3();
+      const normal = new THREE.Vector3();
+      const normalMatrix = new THREE.Matrix3();
+    
+      human.traverse(object => {
+        if (!object.isMesh) return;
+        object.geometry = object.geometry.clone();
+        const geometry = object.geometry;
+        const positions = geometry.getAttribute('position');
+        if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
+        const normals = geometry.getAttribute('normal');
+        const coords = new Float32Array(positions.count * 4);
+        object.updateWorldMatrix(true, false);
+        normalMatrix.getNormalMatrix(object.matrixWorld);
+    
+        for (let i = 0; i < positions.count; i++) {
+          object.getVertexPosition(i, point);
+          point.applyMatrix4(object.matrixWorld);
+          normal.fromBufferAttribute(normals, i)
+            .applyMatrix3(normalMatrix)
+            .normalize();
+          coords[i * 4] = (point.x - centerX) / halfWidth;
+          coords[i * 4 + 1] = (point.y - bounds.min.y) / size.y;
+          coords[i * 4 + 2] = normal.x;
+          coords[i * 4 + 3] = normal.z * FRONT_DIRECTION;
+        }
+    
+        geometry.setAttribute('bodyCoord', new THREE.BufferAttribute(coords, 4));
+        object.material = makeSkinMaterial();
+        object.frustumCulled = false;
+      });
+      // Do not focus until the breathing skeleton has settled.
+      // Start with a correctly framed full-body view.
+      resetView(true);
+    }
+    
+    function removeHorizontalRootMotion(clip, anchor = null) {
+      const copy = clip.clone();
+      copy.tracks.forEach(track => {
+        if (!/hips.*\.position$/i.test(track.name)) return;
+        const values = track.values;
+        const x = anchor ? anchor[0] : values[0];
+        const z = anchor ? anchor[1] : values[2];
+        for (let i = 0; i < values.length; i += 3) {
+          values[i] = x;
+          values[i + 2] = z;
+        }
+      });
+      return copy;
+    }
+    
+    function setRegion(regionKey) {
+      const region = REGIONS[regionKey];
+      if (!region) return;
+      currentRegion = region;
+      highlightUniforms.uRegionShape.value.set(
+        region.x, region.y, region.rx, region.ry
+      );
+      const surfaceCodes = { both: 0, front: 1, back: 2, frontSide: 3 };
+      highlightUniforms.uRegionMode.value.set(
+        region.both ? 1 : 0,
+        surfaceCodes[region.surface] ?? 0
+      );
+      highlightUniforms.uRegionStrength.value = 0.98;
+      highlightColor.set(selected?.mode === 'HEAT' ? 0xff902f : 0x7187d9);
+    }
+    
+    function focusRegion(regionKey, instant = false) {
+      if (!bounds) return;
+      const region = REGIONS[regionKey];
+      if (!region) return;
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      const sign = region.view === 'back' ? -FRONT_DIRECTION : FRONT_DIRECTION;
+      // Keep the camera facing the requested side while the character breathes.
+      // Region coordinates are defined relative to the normalized standing model.
+      const x = center.x + region.x * size.x * 0.5;
+      const y = bounds.min.y + region.y * size.y;
+      targetGoal.set(x, y, center.z);
+      cameraGoal.set(
+        x + size.x * 0.12,
+        y + size.y * 0.045,
+        center.z + sign * Math.max(size.y * 0.62, 0.85)
+      );
+      if (instant) {
+        camera.position.copy(cameraGoal);
+        controls.target.copy(targetGoal);
+      } else {
+        cameraMoving = true;
+      }
+      setRegion(regionKey);
+      $('regionLabel').textContent = `${region.name} · ${region.view} view`;
+      $('viewerText').textContent = `Selected: ${selected.name}`;
+    }
+    
+    function resetView(instant = false) {
+      if (!bounds) return;
+      const size = bounds.getSize(new THREE.Vector3());
+      const center = bounds.getCenter(new THREE.Vector3());
+      targetGoal.set(center.x, bounds.min.y + size.y * 0.52, center.z);
+      cameraGoal.set(
+        center.x,
+        bounds.min.y + size.y * 0.54,
+        center.z + FRONT_DIRECTION * size.y * 1.85
+      );
+      if (instant) {
+        camera.position.copy(cameraGoal);
+        controls.target.copy(targetGoal);
+      } else {
+        cameraMoving = true;
+      }
+      highlightUniforms.uRegionStrength.value = 0;
+      $('regionLabel').textContent = 'Full-body view · Breathing idle';
+    }
+    
+    function updateTemperature() {
+      const value = Number($('tempSlider').value).toFixed(1);
+      $('tempValue').textContent = `${value} °C`;
+      $('targetReading').textContent = `${value} °C`;
+    }
+    
+    function stopPreview() {
+      preview = false;
+      $('sessionState').textContent = 'Idle';
+      $('sessionBadge').textContent = 'Session idle';
+      $('startBtn').disabled = false;
+      $('stopBtn').disabled = true;
+      $('feedback').textContent = 'Preview cancelled. No physical device was affected.';
+    }
+    
+    function selectPreset(preset) {
+      if (preview && selected !== preset) {
+        if (!confirm('Cancel the current session preview and switch presets?')) return;
+        stopPreview();
+      }
+      selected = preset;
+      $('selectedName').textContent = preset.name;
+      $('selectedMode').textContent = preset.mode === 'COOL' ? 'Cooling' : 'Heating';
+      $('selectedCondition').textContent = preset.condition;
+      $('modeTag').textContent = preset.mode === 'COOL' ? 'COOLING' : 'HEATING';
+      $('modeTag').className = `tag ${preset.mode === 'COOL' ? 'cool' : 'heat'}`;
+    
+      const [min, max] = preset.range;
+      const slider = $('tempSlider');
+      slider.disabled = false;
+      slider.min = min;
+      slider.max = max;
+      slider.step = 0.5;
+      slider.value = (min + max) / 2;
+      $('minTemp').textContent = `${min} °C`;
+      $('maxTemp').textContent = `${max} °C`;
+      $('tempLimits').textContent = `${min}–${max} °C`;
+      $('durationValue').textContent = preset.duration;
+      updateTemperature();
+    
+      document.querySelectorAll('.preset').forEach(button => {
+        const active = button.dataset.id === preset.id;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      if (human && mixer) focusRegion(preset.region);
+      $('feedback').textContent = 'Preset ready. Temperature is limited to its reference range.';
+    }
+    
+    const list = $('presetList');
+    presets.forEach(preset => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'preset';
+      button.dataset.id = preset.id;
+      button.innerHTML = `
+        <span><strong></strong><small></small></span>
+        <span class="tag ${preset.mode === 'COOL' ? 'cool' : 'heat'}">
+          ${preset.mode === 'COOL' ? 'COOL' : 'HEAT'}
+        </span>
+      `;
+      button.querySelector('strong').textContent = preset.name;
+      button.querySelector('small').textContent =
+        `${preset.condition} · ${preset.temperature}`;
+      button.addEventListener('click', () => selectPreset(preset));
+      list.appendChild(button);
+    });
+    
+    $('tempSlider').addEventListener('input', updateTemperature);
+    $('resetView').addEventListener('click', () => resetView());
+    $('startBtn').addEventListener('click', () => {
+      if (!selected || preview) return;
+      preview = true;
+      $('sessionState').textContent = 'Preview only';
+      $('sessionBadge').textContent = 'Preview active';
+      $('startBtn').disabled = true;
+      $('stopBtn').disabled = false;
+      $('feedback').textContent = 'Visual preview only. No hardware command was sent.';
+    });
+    $('stopBtn').addEventListener('click', () => {
+      if (!preview) return;
+      if (confirm('Are you sure you want to cancel the current therapy preset preview?')) {
+        stopPreview();
+      }
+    });
+    $('startBtn').disabled = true;
+    if (presets.length) {
+      selectPreset(presets[0]);
+      $('startBtn').disabled = false;
+    }
+    
+    function resizeViewer() {
+      const container = $('scene');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!width || !height) return;
+      renderer.setPixelRatio(Math.min(devicePixelRatio, mobile.matches ? 1.25 : 1.6));
+      renderer.setSize(width, height, false);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+    new ResizeObserver(resizeViewer).observe($('scene'));
+    mobile.addEventListener('change', resizeViewer);
+    
+    async function loadCharacter() {
+      try {
+        const loader = new FBXLoader();
+        $('loadText').textContent = 'Loading the FahrenCool human model…';
+        const character = await loader.loadAsync(HUMAN_URL);
+        prepareHuman(character);
+    
+        $('loadText').textContent = 'Preparing breathing animation…';
+        const breathing = await loader.loadAsync(IDLE_URL);
+        if (!breathing.animations.length) {
+          throw new Error('Breathing FBX has no animation clip');
+        }
+        // Body Chart uses the walking FBX skeleton and the breathing clip.
+        // Match its hip anchoring and foot-grounding to prevent the body
+        // drifting vertically out of the camera's field of view.
+        const hipsTrack = character.animations?.[0]?.tracks.find(
+          track => /hips.*\\.position$/i.test(track.name)
+        );
+        const anchor = hipsTrack
+          ? [hipsTrack.values[0], hipsTrack.values[2]]
+          : null;
+
+        character.traverse(object => {
+          if (object.isBone && /lefttoebase|righttoebase|lefttoe|righttoe/i.test(object.name)) {
+            footBones.push(object);
+          }
+        });
+
+        if (footBones.length < 2) {
+          footBones = [];
+          character.traverse(object => {
+            if (object.isBone && /leftfoot|rightfoot/i.test(object.name)) {
+              footBones.push(object);
+            }
+          });
+        }
+
+        mixer = new THREE.AnimationMixer(character);
+        mixer.clipAction(
+          removeHorizontalRootMotion(breathing.animations[0], anchor)
+        ).reset().play();
+
+        mixer.update(1 / 60);
+        groundCharacter(1 / 60);
+        mixer.update(1 / 60);
+        groundCharacter(1 / 60);
+
+        // Reset to full body AFTER the animation has settled.
+        resetView(true);
+        $('animationStatus').textContent = 'Breathing loop';
+        $('viewerText').textContent = 'Model ready · Select a preset to focus';
+        // Render the first frame before revealing the dashboard.
+        requestAnimationFrame(() => {
+          controls.update();
+          renderer.render(scene, camera);
+          requestAnimationFrame(() => {
+            $('modelLoading').classList.add('hidden');
+            try { sessionStorage.removeItem('fahrencool-returning-to-dashboard'); } catch (_) {}
+          });
+        });
+      } catch (error) {
+        // Never leave the full-screen loader trapping the user on failure.
+        $('modelLoading').classList.add('hidden');
+        console.error('FahrenCool 3D load error:', error);
+        $('animationStatus').textContent = 'Load failed';
+        $('viewerText').textContent = '3D loading failed — check the browser console and assets/ paths.';
+        $('feedback').textContent = '3D model unavailable. The dashboard controls remain accessible.';
+
+      }
+    }
+    
+    // Keep the animated feet at ground level, as in bodyChart.html.
+    // This prevents the FBX hip animation from shifting the entire model
+    // out of the viewer (the screenshot showed only the lower legs).
+    function groundCharacter(dt) {
+      if (!human || !mixer || !footBones.length) return;
+
+      bodyRoot.updateMatrixWorld(true);
+      let lowestY = Infinity;
+
+      for (const foot of footBones) {
+        foot.getWorldPosition(footPosition);
+        lowestY = Math.min(lowestY, footPosition.y);
+      }
+
+      if (!Number.isFinite(lowestY)) return;
+
+      const correction = -lowestY;
+      const blend = grounded ? 1 - Math.exp(-16 * dt) : 1;
+      bodyRoot.position.y += correction * blend;
+      grounded = true;
+    }
+
+    // Render continuously for the breathing skeleton, but cap mobile rendering
+    // to approximately 30 fps. Pause completely while the tab is hidden.
+    let lastFrame = 0;
+    let elapsed = 0;
+    function animate(timestamp) {
+      frameHandle = requestAnimationFrame(animate);
+      if (document.hidden) {
+        lastFrame = timestamp;
+        return;
+      }
+      if (mobile.matches && timestamp - lastFrame < 33) return;
+      const dt = lastFrame ? Math.min((timestamp - lastFrame) / 1000, 0.07) : 0;
+      lastFrame = timestamp;
+      elapsed += dt;
+    
+      if (mixer) {
+        mixer.update(dt);
+        groundCharacter(dt);
+      }
+      if (cameraMoving) {
+        const smooth = 1 - Math.exp(-5 * dt);
+        camera.position.lerp(cameraGoal, smooth);
+        controls.target.lerp(targetGoal, smooth);
+        if (camera.position.distanceTo(cameraGoal) < 0.003 &&
+            controls.target.distanceTo(targetGoal) < 0.003) {
+          cameraMoving = false;
+        }
+      }
+      if (currentRegion && highlightUniforms.uRegionStrength.value > 0) {
+        highlightUniforms.uPulse.value = reducedMotion.matches
+          ? 0.8
+          : 0.68 + 0.32 * Math.sin(elapsed * 2.6);
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    
+    resizeViewer();
+    requestAnimationFrame(animate);
+    loadCharacter();
+  </script>
+ </body>
 </html>
