@@ -899,6 +899,37 @@ body.dashboard-loading > .shell {
 #presetModeSetting[data-mode="COOL"] strong { color: #19429e; }
 #presetModeSetting[data-mode="HEAT"] { background: #fff4e9; border-color: #f4c4a5; }
 #presetModeSetting[data-mode="HEAT"] strong { color: #a84313; }
+
+/* Blue-led interface: sand is the neutral base; tangerine denotes heat. */
+body { background: radial-gradient(ellipse at 50% 0%, #fffcf7 0%, #f3e8d5 75%, #ede2d0 100%); }
+.eyebrow { color: var(--cool-blue-dark); }
+.layout > aside.card, .layout > .right > .card, .stack > .card:not(.viewer) { border-top: 3px solid var(--royal-blue); }
+.card h2 { color: var(--cool-blue-dark); }
+.preset:hover { background: #eef4ff; border-color: #9db8eb; }
+.preset.active { background: linear-gradient(115deg, #e7efff, #f7faff); }
+.preset.active:has(.tag.heat) { background: linear-gradient(115deg, #fff4e9, #fffcf7); }
+.viewerhead { border-bottom-color: rgba(36,84,198,.25); }
+.vieweractions button, .outline { background: #e7efff; border-color: #bfd5fa; color: #19429e; }
+.vieweractions button:hover, .outline:hover { background: #d6e4ff; }
+.reading:nth-child(2) { background: #eef4ff; border-color: #c8d9fa; }
+.reading:nth-child(3) { background: #fffcf7; border-color: #e4dfd8; }
+#targetReading, #timeReading, #waterReading { color: #19429e; }
+.setting { background: #eef4ff; border-color: #c8d9fa; }
+#durationSlider { accent-color: var(--royal-blue); }
+.btn { background: var(--royal-blue); color: white; }
+.btn:not(:disabled):hover { background: var(--cool-blue-dark); }
+.btn.secondary { background: #fffcf7; border: 1px solid #ccd9ef; color: #19429e; }
+.btn.secondary:not(:disabled):hover { background: #eef4ff; color: #19429e; }
+#stopBtn:not(:disabled) { border-color: #efbb9d; color: #a84313; }
+#stopBtn:not(:disabled):hover { background: #fff4e9; }
+.bottomlink { background: linear-gradient(115deg, #fffcf7, #eef4ff); border-left-color: var(--royal-blue); }
+.fc-modal { border-top-color: var(--royal-blue); }
+.fc-modal-confirm { background: var(--royal-blue); border-color: var(--royal-blue) !important; }
+.fc-modal-confirm:hover { background: var(--cool-blue-dark); }
+/* Preserve the mode-dependent summary and the original orange brand underline. */
+#presetModeSetting[data-mode="HEAT"] { background: #fff4e9; border-color: #f4c4a5; }
+#presetModeSetting[data-mode="COOL"] { background: #e7efff; border-color: #bfd5fa; }
+
 </style>
   <script type="importmap">
    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}
