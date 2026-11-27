@@ -3,7 +3,7 @@
  <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width,initial-scale=1" name="viewport"/>
-  <meta content="#f6f9ff" name="theme-color"/>
+  <meta content="#f3e8d5" name="theme-color"/>
   <title>
    FahrenCool | Therapy Demo Dashboard
   </title>
@@ -745,6 +745,160 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
   .fc-modal-actions { flex-direction: column-reverse; }
 }
 
+
+/* Dashboard theme synchronized with bodyChart.html.
+   Layout, scroll limits, loading animation and application logic stay intact. */
+:root {
+  --royal-blue: #2454c6;
+  --cool-blue: #2454c6;
+  --cool-blue-dark: #19429e;
+  --tangerine: #f47735;
+  --sand: #f3e8d5;
+  --warm-white: #fffcf7;
+  --soft-blue: #e7efff;
+  --glass: rgba(255, 252, 247, .93);
+  --border: rgba(36, 84, 198, .15);
+  --panel-shadow: 0 12px 38px rgba(23, 43, 80, .12);
+  --blue: var(--royal-blue);
+  --orange: var(--tangerine);
+  --ink: #172b50;
+  --muted: #68758b;
+  --line: #e4dfd8;
+  --bg: var(--sand);
+  --shadow: var(--panel-shadow);
+}
+body {
+  font-family: Arial, sans-serif;
+  background: radial-gradient(ellipse at 50% 0%, #fffcf7 0%, #f3e8d5 62%, #eadbc4 100%);
+  min-height: 100vh;
+}
+.shell { padding: 22px 24px 40px; }
+.top {
+  padding: 13px 20px;
+  min-height: 68px;
+  border: 1px solid rgba(36, 84, 198, .16);
+  border-bottom: 3px solid var(--tangerine);
+  border-radius: 17px;
+  background: rgba(255, 252, 247, .96);
+  box-shadow: 0 8px 30px rgba(23, 43, 80, .10);
+}
+.brand { display: inline-block; font-size: 25px; font-weight: 900; letter-spacing: -.9px; line-height: 1.1; white-space: nowrap; }
+.brand b, .brand .brand-fahren { color: var(--tangerine); font-weight: 900; }
+.brand .brand-cool { color: var(--royal-blue); }
+.subbrand { margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 400; letter-spacing: .8px; }
+.welcome { margin: 25px 0 20px; }
+.eyebrow { color: #a84313; letter-spacing: 1.5px; }
+h1 { color: var(--ink); }
+.card, .bottomlink {
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  box-shadow: var(--panel-shadow);
+}
+.card h2 { font-size: 17px; font-weight: 800; }
+.layout > aside.card { border-top: 3px solid var(--tangerine); }
+.layout > .right > .card { border-top: 3px solid var(--tangerine); }
+.stack > .card:not(.viewer) { border-top: 3px solid var(--tangerine); }
+.presetlist { scrollbar-width: thin; scrollbar-color: #a8c6f3 transparent; margin-top: 13px; }
+.preset {
+  background: rgba(255, 252, 247, .9);
+  border: 1px solid #e2dfda;
+  border-radius: 11px;
+  transition: background .2s, border-color .2s, box-shadow .2s;
+}
+.preset:has(.tag.cool) { border-left: 4px solid var(--royal-blue); }
+.preset:has(.tag.heat) { border-left: 4px solid var(--tangerine); }
+.preset:has(.tag.contrast) { border-left: 4px solid #8071b9; }
+.preset:hover { background: #fff0e5; border-color: #efbb9d; }
+.preset.active {
+  background: linear-gradient(115deg, #e7efff, #fff4e9);
+  border-color: var(--royal-blue);
+  box-shadow: inset 3px 0 0 var(--royal-blue);
+}
+.preset.active:has(.tag.heat) {
+  background: linear-gradient(115deg, #fff0e5, #fffcf7);
+  border-color: var(--tangerine);
+  box-shadow: inset 3px 0 0 var(--tangerine);
+}
+.tag { border-radius: 8px; font-weight: 900; }
+.cool { color: #19429e; background: #e7efff; }
+.heat { color: #a84313; background: #fff0e5; }
+.contrast { color: #6954b0; background: #eee9ff; }
+.viewerhead {
+  background: linear-gradient(150deg, rgba(255,252,247,.98), rgba(231,239,255,.92));
+  border-bottom: 2px solid rgba(244,119,53,.45);
+}
+.viewerarea { background: #d9dcdf; }
+.viewerstatus {
+  background: rgba(255,252,247,.93);
+  border-color: var(--border);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+.vieweractions button, .outline { background: #fff0e5; border-color: #efbb9d; color: #a84313; }
+.vieweractions button:hover, .outline:hover { background: #ffe2ce; }
+.readings { margin-top: 13px; }
+.reading { background: #fffcf7; border-color: #e4dfd8; }
+.reading:nth-child(1) { background: #edf4ff; border-color: #bfd5fa; }
+.reading:nth-child(2) { background: #fff4e9; border-color: #f4c4a5; }
+.reading:nth-child(3) { background: #f5eddf; border-color: #e6d6be; }
+.reading strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+#targetReading, #timeReading { color: #a84313; }
+.setting { background: #fff4e9; border-color: #f4c4a5; }
+.setting strong { color: var(--ink); }
+.fieldlabel { color: var(--ink); }
+.bounds { color: var(--muted); }
+.range { accent-color: var(--royal-blue); }
+#durationSlider { accent-color: var(--tangerine); }
+.btn { background: #b84b16; color: white; }
+.btn:not(:disabled):hover { background: #a84313; }
+.btn.secondary { background: #fff0e5; border: 1px solid #efbb9d; color: #a84313; }
+.btn.secondary:not(:disabled):hover { background: #ffe2ce; color: #8e3810; }
+.btn.ghost { background: var(--soft-blue); color: var(--cool-blue-dark); }
+.feedback { color: #495b77; }
+.feedback:empty { min-height: 0; margin: 0; }
+.bottomlink { background: linear-gradient(115deg, #fffcf7, #fff0e5); border-left: 4px solid var(--tangerine); }
+.bottomlink a { background: var(--soft-blue); color: var(--cool-blue-dark); border: 1px solid rgba(36,84,198,.2); }
+.bottomlink a:hover { background: #d6e4ff; }
+.foot { color: var(--muted); }
+.fc-modal { background: var(--glass); border: 1px solid var(--border); border-top: 3px solid var(--tangerine); backdrop-filter: blur(22px) saturate(135%); }
+.fc-modal h2 { color: var(--ink); }
+.fc-modal-confirm { background: #b84b16; border-color: #b84b16 !important; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline-color: var(--royal-blue); }
+@media (max-width:767px) {
+  .shell { padding: 10px 10px 28px; }
+  .top { padding: 12px 14px; min-height: 60px; }
+  .brand { font-size: 21px; }
+  .subbrand { font-size: 9px; letter-spacing: .25px; }
+  .card, .bottomlink { backdrop-filter: blur(12px) saturate(125%); -webkit-backdrop-filter: blur(12px) saturate(125%); }
+  .bottomlink { flex-wrap: wrap; }
+}
+
+
+/* Full-screen startup: the loader is a direct child of body, not a glass card. */
+body > #modelLoading {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  gap: 0;
+}
+body.dashboard-loading { overflow: hidden; }
+body.dashboard-loading > .shell {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Color the preset mode and condition card according to the selected therapy. */
+#presetModeSetting { background: var(--warm-white); border-color: var(--line); }
+#presetModeSetting[data-mode="COOL"] { background: #e7efff; border-color: #bfd5fa; }
+#presetModeSetting[data-mode="COOL"] strong { color: #19429e; }
+#presetModeSetting[data-mode="HEAT"] { background: #fff4e9; border-color: #f4c4a5; }
+#presetModeSetting[data-mode="HEAT"] strong { color: #a84313; }
 </style>
   <script type="importmap">
    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}
@@ -771,18 +925,49 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
   } catch (_) {}
 </script>
 </head>
- <body>
+ <body class="dashboard-loading">
+  <div id="modelLoading" role="status" aria-live="polite">
+    <div class="fc-loader">
+      <svg class="fc-pad" viewBox="0 0 340 265"
+           xmlns="http://www.w3.org/2000/svg"
+           aria-hidden="true">
+        <defs>
+          <linearGradient id="padMaterial" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#c8d9f6"/>
+          </linearGradient>
+        </defs>
+
+        <rect x="74" y="49" width="192" height="141"
+              rx="31" fill="#7697c9"/>
+        <rect x="69" y="43" width="192" height="141"
+              rx="31" fill="url(#padMaterial)"
+              stroke="#9cb9e6" stroke-width="3"/>
+        <rect x="79" y="53" width="172" height="119"
+              rx="24" fill="#eef4ff"
+              stroke="#ffffff" stroke-width="2"/>
+
+        <path class="fc-pad-tube"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+
+        <path class="fc-pad-water"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+
+        <path class="fc-water-shimmer"
+              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
+      </svg>
+
+      <div class="fc-loader-brand">
+        <span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span>
+      </div>
+
+      <p id="loadText" class="fc-loader-message"></p>
+    </div>
+  </div>
   <div class="shell">
    <header class="top">
     <div>
-     <a class="brand" href="./index.html">
-      <b>
-       FAHREN
-      </b>
-      <span>
-       COOL
-      </span>
-     </a>
+     <a class="brand" href="./index.html"><span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span></a>
      <div class="subbrand">
       THERAPY COMMAND CENTER
      </div>
@@ -829,44 +1014,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
        </div>
        <div id="scene">
        </div>
-  <div id="modelLoading" role="status" aria-live="polite">
-    <div class="fc-loader">
-      <svg class="fc-pad" viewBox="0 0 340 265"
-           xmlns="http://www.w3.org/2000/svg"
-           aria-hidden="true">
-        <defs>
-          <linearGradient id="padMaterial" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="100%" stop-color="#c8d9f6"/>
-          </linearGradient>
-        </defs>
 
-        <rect x="74" y="49" width="192" height="141"
-              rx="31" fill="#7697c9"/>
-        <rect x="69" y="43" width="192" height="141"
-              rx="31" fill="url(#padMaterial)"
-              stroke="#9cb9e6" stroke-width="3"/>
-        <rect x="79" y="53" width="172" height="119"
-              rx="24" fill="#eef4ff"
-              stroke="#ffffff" stroke-width="2"/>
-
-        <path class="fc-pad-tube"
-              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
-
-        <path class="fc-pad-water"
-              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
-
-        <path class="fc-water-shimmer"
-              d="M219 68 H115 Q99 68 99 84 V145 Q99 160 115 160 H219 Q235 160 235 145 V84 Q235 68 219 68 Z" pathLength="100"/>
-      </svg>
-
-      <div class="fc-loader-brand">
-        <span class="brand-fahren">FAHREN</span><span class="brand-cool">COOL</span>
-      </div>
-
-      <p id="loadText" class="fc-loader-message"></p>
-    </div>
-  </div>
 
        <div class="viewerstatus">
         <span id="viewerText">
@@ -924,7 +1072,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       <p class="small" id="selectedName">
        Choose a preset
       </p>
-      <div class="setting">
+      <div class="setting" id="presetModeSetting">
        <div>
         <p>
          Preset mode
@@ -1000,10 +1148,10 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
    <section class="bottomlink">
     <div>
      <strong>
-      Explore the Educational Body Chart
+      Explore the Body Chart
      </strong>
      <p class="small">
-      Learn about body regions and hot/cold therapy. Educational selections do not control this dashboard.
+      Learn about body regions and hot/cold therapy.
      </p>
     </div>
     <a href="./bodyChart.html">
@@ -1011,7 +1159,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     </a>
    </section>
    <footer class="foot">
-    FAHRENCOOL · Interactive demo · No physical hardware connected
+    FAHRENCOOL
    </footer>
   </div>
 
@@ -1082,6 +1230,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     let frameHandle = 0;
     
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#d9dcdf");
     scene.add(bodyRoot);
     const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
     const renderer = new THREE.WebGLRenderer({
@@ -1749,6 +1898,7 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
       $('selectedName').textContent = preset.name;
       $('selectedMode').textContent = preset.mode === 'COOL' ? 'Cooling' : 'Heating';
       $('selectedCondition').textContent = preset.condition;
+      $('presetModeSetting').dataset.mode = preset.mode;
       $('modeTag').textContent = preset.mode === 'COOL' ? 'COOLING' : 'HEATING';
       $('modeTag').className = `tag ${preset.mode === 'COOL' ? 'cool' : 'heat'}`;
     
@@ -1894,23 +2044,13 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
         resetView(true);
 
         $('viewerText').textContent = 'Model ready · Select a preset to focus';
-        // Render the first frame before revealing the dashboard.
-        requestAnimationFrame(() => {
-          controls.update();
-          renderer.render(scene, camera);
-          requestAnimationFrame(() => {
-            $('modelLoading').classList.add('hidden');
-            try { sessionStorage.removeItem('fahrencool-returning-to-dashboard'); } catch (_) {}
-          });
-        });
+        return true;
       } catch (error) {
-        // Never leave the full-screen loader trapping the user on failure.
-        $('modelLoading').classList.add('hidden');
         console.error('FahrenCool 3D load error:', error);
 
         $('viewerText').textContent = '3D loading failed — check the browser console and assets/ paths.';
         $('feedback').textContent = '3D model unavailable. The dashboard controls remain accessible.';
-
+        return false;
       }
     }
     
@@ -1974,8 +2114,26 @@ html:has(#modelLoading:not(.hidden)) { overflow: hidden; }
     
     resizeViewer();
     requestAnimationFrame(animate);
-    loadClinic();
-    loadCharacter();
+    // Keep the full-screen loading animation visible while both models load.
+    async function initializeDashboard() {
+      try {
+        const results = await Promise.allSettled([loadClinic(), loadCharacter()]);
+        for (const result of results) {
+          if (result.status === 'rejected') console.error('FahrenCool startup:', result.reason);
+        }
+        resizeViewer();
+        controls.update();
+        renderer.render(scene, camera);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      } catch (error) {
+        console.error('FahrenCool initialization:', error);
+      } finally {
+        document.body.classList.remove('dashboard-loading');
+        $('modelLoading').classList.add('hidden');
+        try { sessionStorage.removeItem('fahrencool-returning-to-dashboard'); } catch (_) {}
+      }
+    }
+    initializeDashboard();
   </script>
  </body>
 </html>
